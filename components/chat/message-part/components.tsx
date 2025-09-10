@@ -57,7 +57,7 @@ function StatusBadge({ status }: { status: DataPart['components']['status'] }) {
 
   return (
     <Badge variant={variant} className="flex items-center gap-1">
-      <Icon className="w-3 h-3" />
+      <Icon className="w-3 h-3" loading={false} />
       {text}
     </Badge>
   )
@@ -75,7 +75,7 @@ function ListComponentsContent({
     <div className="space-y-3">
       {query && (
         <div className="text-sm text-muted-foreground">
-          <span className="font-medium">Search:</span> "{query}"
+          <span className="font-medium">Search:</span> &quot;{query}&quot;
         </div>
       )}
 

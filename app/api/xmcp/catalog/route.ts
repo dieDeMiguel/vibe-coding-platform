@@ -99,19 +99,18 @@ export async function POST(req: Request) {
     const results = await searchComponents({
       query,
       tags,
-      packages,
-      languages,
-      limit,
-      offset
+      package: packages?.[0], // Take first package if multiple provided
     })
 
+    const hasMore = results.items.length === limit
+    
     return NextResponse.json({
       ...results,
       pagination: {
         offset,
         limit,
-        hasMore: results.hasMore,
-        nextOffset: results.hasMore ? offset + limit : null
+        hasMore,
+        nextOffset: hasMore ? offset + limit : null
       },
       _debug: process.env.NODE_ENV === 'development' ? {
         searchParams: { query, tags, packages, languages, limit, offset },

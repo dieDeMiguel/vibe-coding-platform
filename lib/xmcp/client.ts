@@ -145,9 +145,10 @@ export class XMCPClient {
         if (rawResponse.components || rawResponse.items) {
           // Handle wrapped array response
           const items = rawResponse.components || rawResponse.items
+          const itemsArray = Array.isArray(items) ? items : []
           return {
-            items: normalizeComponentList(Array.isArray(items) ? items : []),
-            total: items.length,
+            items: normalizeComponentList(itemsArray),
+            total: itemsArray.length,
           }
         }
         

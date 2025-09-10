@@ -959,7 +959,7 @@ function getExampleValue(type: string): string {
 async function writeFilesToSandbox(sandbox: Sandbox, files: GeneratedFile[]): Promise<void> {
   const writePromises = files.map(async (file) => {
     try {
-      await sandbox.writeFile(file.path, file.content)
+      await sandbox.writeFiles([{ path: file.path, content: Buffer.from(file.content, 'utf8') }])
       console.log(`✓ Generated: ${file.path}`)
     } catch (error) {
       console.error(`✗ Failed to write ${file.path}:`, error)

@@ -168,3 +168,27 @@ export async function searchComponents(query: ListComponentsRequest = {}) {
 export function clearCatalogCache() {
   catalogCache = null
 }
+
+export const dev = {
+  async reloadCatalog() {
+    clearCatalogCache()
+    return await getCatalog()
+  },
+
+  async validateCatalog() {
+    const catalog = await getCatalog()
+    if (!catalog) return { valid: false, errors: ['Failed to load catalog'] }
+    
+    const errors: string[] = []
+    catalog.components.forEach((comp, index) => {
+      if (!comp.name) errors.push(`Component ${index}: Missing name`)
+      if (!comp.package) errors.push(`Component ${index}: Missing package`)
+    })
+    
+    return { valid: errors.length === 0, errors }
+  },
+
+  async getRawCatalog() {
+    return await loadCatalog()
+  }
+}

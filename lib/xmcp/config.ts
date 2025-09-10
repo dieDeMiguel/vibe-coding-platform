@@ -135,13 +135,11 @@ export function getEnvironmentConfig(): XMCPConfig {
   const env = process.env.NODE_ENV || 'development'
   const envConfig = loadXMCPConfigFromEnv()
   
-  switch (env) {
-    case 'production':
-      return mergeXMCPConfigs(XMCP_CONFIG_PRESETS.production, envConfig)
-    case 'staging':
-    case 'test':
-      return mergeXMCPConfigs(XMCP_CONFIG_PRESETS.staging, envConfig)
-    default:
-      return mergeXMCPConfigs(XMCP_CONFIG_PRESETS.development, envConfig)
+  if (env === 'production') {
+    return mergeXMCPConfigs(XMCP_CONFIG_PRESETS.production, envConfig)
+  } else if (env === 'test') {
+    return mergeXMCPConfigs(XMCP_CONFIG_PRESETS.staging, envConfig)
+  } else {
+    return mergeXMCPConfigs(XMCP_CONFIG_PRESETS.development, envConfig)
   }
 }

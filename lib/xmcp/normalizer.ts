@@ -6,8 +6,6 @@ import {
   type ComponentVariant,
   type ComponentAsset,
   type ComponentStyle,
-  NormalizedComponentSpecSchema,
-  ComponentListItemSchema,
 } from './types'
 
 // Generic schema for unknown MCP component data
@@ -67,7 +65,7 @@ export function normalizeComponentSpec(data: unknown): NormalizedComponentSpec {
   const component = parsed.data as Record<string, unknown>
   
   const normalized: NormalizedComponentSpec = {
-    name: component.name,
+    name: String(component.name),
     package: String(component.package || '@unknown/components'),
     version: String(component.version || '1.0.0'),
     description: String(component.description || ''),

@@ -21,7 +21,7 @@ export async function GET() {
         totalComponents: catalogInfo.stats.totalComponents,
         packages: catalogInfo.stats.packages.length,
         tags: catalogInfo.stats.tags.length,
-        lastUpdated: catalogInfo.metadata?.lastUpdated
+        lastUpdated: catalogInfo.metadata && 'lastUpdated' in catalogInfo.metadata ? catalogInfo.metadata.lastUpdated : null
       },
       
       // API endpoints
