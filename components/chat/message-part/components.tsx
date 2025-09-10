@@ -20,7 +20,6 @@ export function Components({ message }: Props) {
         <StatusBadge status={status} />
       </div>
 
-      {/* Action-specific content */}
       {action === 'list' && (
         <ListComponentsContent 
           query={query}
@@ -65,10 +64,7 @@ function StatusBadge({ status }: { status: DataPart['components']['status'] }) {
 }
 
 function ListComponentsContent({ 
-  query, 
-  results, 
-  status, 
-  error 
+  query, results, status, error 
 }: {
   query?: string
   results?: string[]
@@ -107,23 +103,12 @@ function ListComponentsContent({
           </div>
         </div>
       )}
-
-      {status === 'done' && (!results || results.length === 0) && (
-        <div className="text-sm text-muted-foreground">
-          No components found matching the search criteria.
-        </div>
-      )}
     </div>
   )
 }
 
 function FetchComponentContent({
-  componentName,
-  variant,
-  generatedFiles,
-  demoPath,
-  status,
-  error
+  componentName, variant, generatedFiles, demoPath, status, error
 }: {
   componentName?: string
   variant?: string
@@ -179,18 +164,11 @@ function FetchComponentContent({
         <div className="flex items-center gap-2 p-2 bg-primary/5 border border-primary/20 rounded-md">
           <Folder className="w-4 h-4 text-primary" />
           <div className="text-sm">
-            <span className="font-medium text-primary">Demo page created:</span>
+            <span className="font-medium text-primary">Demo page:</span>
             <code className="ml-2 bg-primary/10 px-1 py-0.5 rounded font-mono text-xs">
               {demoPath}
             </code>
           </div>
-        </div>
-      )}
-
-      {status === 'generating' && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Spinner />
-          <span>Generating component files...</span>
         </div>
       )}
     </div>
@@ -199,7 +177,6 @@ function FetchComponentContent({
 
 function FileIcon({ filePath }: { filePath: string }) {
   const extension = filePath.split('.').pop()?.toLowerCase()
-  
   const iconClass = "w-3 h-3"
   
   switch (extension) {
