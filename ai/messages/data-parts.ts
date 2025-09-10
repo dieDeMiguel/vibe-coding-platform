@@ -32,6 +32,17 @@ export const dataPartSchema = z.object({
     summary: z.string(),
     paths: z.array(z.string()).optional(),
   }),
+  'components': z.object({
+    action: z.enum(['list', 'fetch']),
+    componentName: z.string().optional(),
+    variant: z.string().optional(),
+    query: z.string().optional(),
+    results: z.array(z.string()).optional(),
+    generatedFiles: z.array(z.string()).optional(),
+    demoPath: z.string().optional(),
+    status: z.enum(['loading', 'listing', 'fetching', 'generating', 'done', 'error']),
+    error: errorSchema.optional(),
+  }),
 })
 
 export type DataPart = z.infer<typeof dataPartSchema>

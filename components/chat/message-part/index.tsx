@@ -7,6 +7,7 @@ import { CreateSandbox } from './create-sandbox'
 import { GetSandboxURL } from './get-sandbox-url'
 import { RunCommand } from './run-command'
 import { ReportErrors } from './report-errors'
+import { Components } from './components'
 import { Reasoning } from './reasoning'
 import { Text } from './text'
 import { memo } from 'react'
@@ -28,6 +29,8 @@ export const MessagePart = memo(function MessagePart({
     return <GetSandboxURL message={part.data} />
   } else if (part.type === 'data-run-command') {
     return <RunCommand message={part.data} />
+  } else if (part.type === 'data-components') {
+    return <Components message={part.data} />
   } else if (part.type === 'reasoning') {
     return <Reasoning part={part} partIndex={partIndex} />
   } else if (part.type === 'data-report-errors') {
