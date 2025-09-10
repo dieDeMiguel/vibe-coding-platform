@@ -1,0 +1,498 @@
+{
+  "components": [
+    {
+      "name": "Button",
+      "package": "@meli/ui",
+      "version": "2.1.0",
+      "description": "Primary action button component with multiple variants and sizes",
+      "language": "tsx",
+      "style": {
+        "type": "scss",
+        "entry": "styles/button.scss"
+      },
+      "props": [
+        {
+          "name": "variant",
+          "type": "'primary' | 'secondary' | 'tertiary' | 'danger' | 'success'",
+          "required": false,
+          "default": "primary",
+          "description": "Visual variant of the button"
+        },
+        {
+          "name": "size",
+          "type": "'xs' | 'sm' | 'md' | 'lg' | 'xl'",
+          "required": false,
+          "default": "md",
+          "description": "Size of the button"
+        },
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "required": true,
+          "description": "Button content"
+        },
+        {
+          "name": "disabled",
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "Whether the button is disabled"
+        },
+        {
+          "name": "loading",
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "Whether the button is in loading state"
+        },
+        {
+          "name": "onClick",
+          "type": "() => void",
+          "required": false,
+          "description": "Click handler"
+        }
+      ],
+      "variants": [
+        {
+          "name": "primary",
+          "description": "Primary action button with brand colors",
+          "props": {
+            "variant": "primary",
+            "size": "md"
+          }
+        },
+        {
+          "name": "secondary",
+          "description": "Secondary action button with subtle styling",
+          "props": {
+            "variant": "secondary",
+            "size": "md"
+          }
+        },
+        {
+          "name": "danger",
+          "description": "Destructive action button",
+          "props": {
+            "variant": "danger",
+            "size": "md"
+          }
+        },
+        {
+          "name": "small-primary",
+          "description": "Small primary button for compact spaces",
+          "props": {
+            "variant": "primary",
+            "size": "sm"
+          }
+        }
+      ],
+      "code": "import React from 'react';\nimport { clsx } from 'clsx';\nimport styles from './Button.module.css';\n\nexport interface ButtonProps {\n  variant?: 'primary' | 'secondary' | 'tertiary' | 'danger' | 'success';\n  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';\n  children: React.ReactNode;\n  disabled?: boolean;\n  loading?: boolean;\n  onClick?: () => void;\n  className?: string;\n}\n\nexport const Button: React.FC<ButtonProps> = ({\n  variant = 'primary',\n  size = 'md',\n  children,\n  disabled = false,\n  loading = false,\n  onClick,\n  className,\n  ...props\n}) => {\n  return (\n    <button\n      className={clsx(\n        styles.button,\n        styles[`button--${variant}`],\n        styles[`button--${size}`],\n        {\n          [styles['button--disabled']]: disabled,\n          [styles['button--loading']]: loading,\n        },\n        className\n      )}\n      disabled={disabled || loading}\n      onClick={onClick}\n      {...props}\n    >\n      {loading ? (\n        <span className={styles.spinner}>\n          <svg viewBox=\"0 0 24 24\" className={styles.spinnerIcon}>\n            <circle cx=\"12\" cy=\"12\" r=\"10\" fill=\"none\" strokeWidth=\"2\" />\n          </svg>\n        </span>\n      ) : (\n        children\n      )}\n    </button>\n  );\n};",
+      "assets": [
+        {
+          "path": "styles/button.scss",
+          "contents": "$primary-color: #3483fa;\n$secondary-color: #6c757d;\n$danger-color: #dc3545;\n$success-color: #28a745;\n\n.button {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  border: none;\n  border-radius: 6px;\n  font-weight: 600;\n  text-decoration: none;\n  cursor: pointer;\n  transition: all 0.2s ease;\n  position: relative;\n  \n  &:focus {\n    outline: 2px solid rgba($primary-color, 0.2);\n    outline-offset: 2px;\n  }\n  \n  // Variants\n  &--primary {\n    background-color: $primary-color;\n    color: white;\n    \n    &:hover:not(.button--disabled) {\n      background-color: darken($primary-color, 8%);\n    }\n  }\n  \n  &--secondary {\n    background-color: transparent;\n    color: $primary-color;\n    border: 1px solid $primary-color;\n    \n    &:hover:not(.button--disabled) {\n      background-color: rgba($primary-color, 0.1);\n    }\n  }\n  \n  &--danger {\n    background-color: $danger-color;\n    color: white;\n    \n    &:hover:not(.button--disabled) {\n      background-color: darken($danger-color, 8%);\n    }\n  }\n  \n  // Sizes\n  &--xs {\n    padding: 4px 8px;\n    font-size: 12px;\n    min-height: 24px;\n  }\n  \n  &--sm {\n    padding: 6px 12px;\n    font-size: 14px;\n    min-height: 32px;\n  }\n  \n  &--md {\n    padding: 8px 16px;\n    font-size: 16px;\n    min-height: 40px;\n  }\n  \n  &--lg {\n    padding: 12px 24px;\n    font-size: 18px;\n    min-height: 48px;\n  }\n  \n  &--xl {\n    padding: 16px 32px;\n    font-size: 20px;\n    min-height: 56px;\n  }\n  \n  // States\n  &--disabled {\n    opacity: 0.6;\n    cursor: not-allowed;\n  }\n  \n  &--loading {\n    cursor: wait;\n  }\n}\n\n.spinner {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n}\n\n.spinnerIcon {\n  width: 1em;\n  height: 1em;\n  stroke: currentColor;\n  animation: spin 1s linear infinite;\n}\n\n@keyframes spin {\n  from {\n    transform: rotate(0deg);\n  }\n  to {\n    transform: rotate(360deg);\n  }\n}",
+          "type": "scss"
+        },
+        {
+          "path": "Button.module.css",
+          "contents": ".button {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  border: none;\n  border-radius: 6px;\n  font-weight: 600;\n  text-decoration: none;\n  cursor: pointer;\n  transition: all 0.2s ease;\n  position: relative;\n}\n\n.button:focus {\n  outline: 2px solid rgba(52, 131, 250, 0.2);\n  outline-offset: 2px;\n}\n\n.button--primary {\n  background-color: #3483fa;\n  color: white;\n}\n\n.button--primary:hover:not(.button--disabled) {\n  background-color: #1c6dd0;\n}\n\n.button--secondary {\n  background-color: transparent;\n  color: #3483fa;\n  border: 1px solid #3483fa;\n}\n\n.button--secondary:hover:not(.button--disabled) {\n  background-color: rgba(52, 131, 250, 0.1);\n}\n\n.button--danger {\n  background-color: #dc3545;\n  color: white;\n}\n\n.button--danger:hover:not(.button--disabled) {\n  background-color: #c82333;\n}\n\n.button--xs {\n  padding: 4px 8px;\n  font-size: 12px;\n  min-height: 24px;\n}\n\n.button--sm {\n  padding: 6px 12px;\n  font-size: 14px;\n  min-height: 32px;\n}\n\n.button--md {\n  padding: 8px 16px;\n  font-size: 16px;\n  min-height: 40px;\n}\n\n.button--lg {\n  padding: 12px 24px;\n  font-size: 18px;\n  min-height: 48px;\n}\n\n.button--xl {\n  padding: 16px 32px;\n  font-size: 20px;\n  min-height: 56px;\n}\n\n.button--disabled {\n  opacity: 0.6;\n  cursor: not-allowed;\n}\n\n.button--loading {\n  cursor: wait;\n}\n\n.spinner {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n}\n\n.spinnerIcon {\n  width: 1em;\n  height: 1em;\n  stroke: currentColor;\n  animation: spin 1s linear infinite;\n}\n\n@keyframes spin {\n  from {\n    transform: rotate(0deg);\n  }\n  to {\n    transform: rotate(360deg);\n  }\n}",
+          "type": "css"
+        }
+      ],
+      "tags": ["button", "action", "form", "interactive"],
+      "dependencies": ["clsx"]
+    },
+    {
+      "name": "Card",
+      "package": "@meli/ui",
+      "version": "2.1.0",
+      "description": "Flexible card container component for displaying content with optional header, body, and footer",
+      "language": "tsx",
+      "style": {
+        "type": "scss",
+        "entry": "styles/card.scss"
+      },
+      "props": [
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "required": true,
+          "description": "Card content"
+        },
+        {
+          "name": "variant",
+          "type": "'default' | 'outlined' | 'elevated' | 'ghost'",
+          "required": false,
+          "default": "default",
+          "description": "Visual variant of the card"
+        },
+        {
+          "name": "padding",
+          "type": "'none' | 'sm' | 'md' | 'lg'",
+          "required": false,
+          "default": "md",
+          "description": "Internal padding of the card"
+        },
+        {
+          "name": "clickable",
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "Whether the card is clickable"
+        },
+        {
+          "name": "onClick",
+          "type": "() => void",
+          "required": false,
+          "description": "Click handler for clickable cards"
+        }
+      ],
+      "variants": [
+        {
+          "name": "default",
+          "description": "Standard card with subtle border",
+          "props": {
+            "variant": "default",
+            "padding": "md"
+          }
+        },
+        {
+          "name": "elevated",
+          "description": "Card with shadow elevation",
+          "props": {
+            "variant": "elevated",
+            "padding": "md"
+          }
+        },
+        {
+          "name": "product-card",
+          "description": "Card optimized for product listings",
+          "props": {
+            "variant": "outlined",
+            "padding": "sm",
+            "clickable": true
+          }
+        }
+      ],
+      "code": "import React from 'react';\nimport { clsx } from 'clsx';\nimport styles from './Card.module.css';\n\nexport interface CardProps {\n  children: React.ReactNode;\n  variant?: 'default' | 'outlined' | 'elevated' | 'ghost';\n  padding?: 'none' | 'sm' | 'md' | 'lg';\n  clickable?: boolean;\n  onClick?: () => void;\n  className?: string;\n}\n\nexport const Card: React.FC<CardProps> = ({\n  children,\n  variant = 'default',\n  padding = 'md',\n  clickable = false,\n  onClick,\n  className,\n  ...props\n}) => {\n  const Component = clickable ? 'button' : 'div';\n  \n  return (\n    <Component\n      className={clsx(\n        styles.card,\n        styles[`card--${variant}`],\n        styles[`card--padding-${padding}`],\n        {\n          [styles['card--clickable']]: clickable,\n        },\n        className\n      )}\n      onClick={clickable ? onClick : undefined}\n      {...props}\n    >\n      {children}\n    </Component>\n  );\n};\n\nexport interface CardHeaderProps {\n  children: React.ReactNode;\n  className?: string;\n}\n\nexport const CardHeader: React.FC<CardHeaderProps> = ({ children, className }) => (\n  <div className={clsx(styles.cardHeader, className)}>\n    {children}\n  </div>\n);\n\nexport interface CardBodyProps {\n  children: React.ReactNode;\n  className?: string;\n}\n\nexport const CardBody: React.FC<CardBodyProps> = ({ children, className }) => (\n  <div className={clsx(styles.cardBody, className)}>\n    {children}\n  </div>\n);\n\nexport interface CardFooterProps {\n  children: React.ReactNode;\n  className?: string;\n}\n\nexport const CardFooter: React.FC<CardFooterProps> = ({ children, className }) => (\n  <div className={clsx(styles.cardFooter, className)}>\n    {children}\n  </div>\n);",
+      "assets": [
+        {
+          "path": "styles/card.scss",
+          "contents": "$border-color: #e0e0e0;\n$shadow-color: rgba(0, 0, 0, 0.1);\n\n.card {\n  background-color: white;\n  border-radius: 8px;\n  transition: all 0.2s ease;\n  \n  // Variants\n  &--default {\n    border: 1px solid $border-color;\n  }\n  \n  &--outlined {\n    border: 2px solid $border-color;\n  }\n  \n  &--elevated {\n    border: 1px solid $border-color;\n    box-shadow: 0 2px 8px $shadow-color;\n    \n    &:hover {\n      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);\n    }\n  }\n  \n  &--ghost {\n    border: none;\n    background-color: transparent;\n  }\n  \n  // Padding variants\n  &--padding-none {\n    padding: 0;\n  }\n  \n  &--padding-sm {\n    padding: 12px;\n  }\n  \n  &--padding-md {\n    padding: 16px;\n  }\n  \n  &--padding-lg {\n    padding: 24px;\n  }\n  \n  // Clickable state\n  &--clickable {\n    cursor: pointer;\n    border: none;\n    text-align: left;\n    \n    &:hover {\n      transform: translateY(-2px);\n      box-shadow: 0 4px 12px $shadow-color;\n    }\n    \n    &:focus {\n      outline: 2px solid rgba(52, 131, 250, 0.2);\n      outline-offset: 2px;\n    }\n  }\n}\n\n.cardHeader {\n  border-bottom: 1px solid $border-color;\n  margin-bottom: 16px;\n  padding-bottom: 12px;\n  \n  .card--padding-none & {\n    margin: 0;\n    padding: 16px 16px 12px;\n  }\n}\n\n.cardBody {\n  .card--padding-none & {\n    padding: 0 16px;\n  }\n}\n\n.cardFooter {\n  border-top: 1px solid $border-color;\n  margin-top: 16px;\n  padding-top: 12px;\n  \n  .card--padding-none & {\n    margin: 0;\n    padding: 12px 16px 16px;\n  }\n}",
+          "type": "scss"
+        }
+      ],
+      "tags": ["card", "container", "layout"],
+      "dependencies": ["clsx"]
+    },
+    {
+      "name": "Input",
+      "package": "@meli/ui",
+      "version": "2.1.0",
+      "description": "Text input component with validation states and helper text",
+      "language": "tsx",
+      "style": {
+        "type": "scss",
+        "entry": "styles/input.scss"
+      },
+      "props": [
+        {
+          "name": "type",
+          "type": "'text' | 'email' | 'password' | 'number' | 'tel' | 'url'",
+          "required": false,
+          "default": "text",
+          "description": "Input type"
+        },
+        {
+          "name": "placeholder",
+          "type": "string",
+          "required": false,
+          "description": "Placeholder text"
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "required": false,
+          "description": "Input value"
+        },
+        {
+          "name": "defaultValue",
+          "type": "string",
+          "required": false,
+          "description": "Default input value"
+        },
+        {
+          "name": "label",
+          "type": "string",
+          "required": false,
+          "description": "Input label"
+        },
+        {
+          "name": "helperText",
+          "type": "string",
+          "required": false,
+          "description": "Helper text below input"
+        },
+        {
+          "name": "error",
+          "type": "string",
+          "required": false,
+          "description": "Error message"
+        },
+        {
+          "name": "state",
+          "type": "'default' | 'success' | 'warning' | 'error'",
+          "required": false,
+          "default": "default",
+          "description": "Validation state"
+        },
+        {
+          "name": "size",
+          "type": "'sm' | 'md' | 'lg'",
+          "required": false,
+          "default": "md",
+          "description": "Input size"
+        },
+        {
+          "name": "disabled",
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "Whether input is disabled"
+        },
+        {
+          "name": "required",
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "Whether input is required"
+        },
+        {
+          "name": "onChange",
+          "type": "(value: string) => void",
+          "required": false,
+          "description": "Change handler"
+        }
+      ],
+      "variants": [
+        {
+          "name": "default",
+          "description": "Standard text input",
+          "props": {
+            "type": "text",
+            "size": "md",
+            "state": "default"
+          }
+        },
+        {
+          "name": "email",
+          "description": "Email input with validation",
+          "props": {
+            "type": "email",
+            "size": "md",
+            "placeholder": "Enter your email"
+          }
+        },
+        {
+          "name": "password",
+          "description": "Password input field",
+          "props": {
+            "type": "password",
+            "size": "md",
+            "placeholder": "Enter your password"
+          }
+        },
+        {
+          "name": "search",
+          "description": "Search input with large size",
+          "props": {
+            "type": "text",
+            "size": "lg",
+            "placeholder": "Search products..."
+          }
+        }
+      ],
+      "code": "import React, { forwardRef } from 'react';\nimport { clsx } from 'clsx';\nimport styles from './Input.module.css';\n\nexport interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'onChange'> {\n  label?: string;\n  helperText?: string;\n  error?: string;\n  state?: 'default' | 'success' | 'warning' | 'error';\n  size?: 'sm' | 'md' | 'lg';\n  onChange?: (value: string) => void;\n}\n\nexport const Input = forwardRef<HTMLInputElement, InputProps>((\n  {\n    label,\n    helperText,\n    error,\n    state = 'default',\n    size = 'md',\n    className,\n    onChange,\n    disabled,\n    required,\n    ...props\n  },\n  ref\n) => {\n  const finalState = error ? 'error' : state;\n  const finalHelperText = error || helperText;\n\n  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {\n    onChange?.(e.target.value);\n  };\n\n  return (\n    <div className={clsx(styles.inputGroup, className)}>\n      {label && (\n        <label className={clsx(styles.label, {\n          [styles['label--required']]: required,\n          [styles['label--disabled']]: disabled,\n        })}>\n          {label}\n        </label>\n      )}\n      \n      <input\n        ref={ref}\n        className={clsx(\n          styles.input,\n          styles[`input--${size}`],\n          styles[`input--${finalState}`],\n          {\n            [styles['input--disabled']]: disabled,\n          }\n        )}\n        disabled={disabled}\n        onChange={handleChange}\n        {...props}\n      />\n      \n      {finalHelperText && (\n        <div className={clsx(\n          styles.helperText,\n          styles[`helperText--${finalState}`]\n        )}>\n          {finalHelperText}\n        </div>\n      )}\n    </div>\n  );\n});",
+      "assets": [
+        {
+          "path": "styles/input.scss",
+          "contents": "$primary-color: #3483fa;\n$success-color: #28a745;\n$warning-color: #ffc107;\n$error-color: #dc3545;\n$border-color: #e0e0e0;\n$text-color: #333;\n$placeholder-color: #999;\n\n.inputGroup {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n\n.label {\n  font-size: 14px;\n  font-weight: 500;\n  color: $text-color;\n  \n  &--required::after {\n    content: ' *';\n    color: $error-color;\n  }\n  \n  &--disabled {\n    opacity: 0.6;\n  }\n}\n\n.input {\n  border: 2px solid $border-color;\n  border-radius: 6px;\n  font-size: 16px;\n  transition: all 0.2s ease;\n  background-color: white;\n  \n  &:focus {\n    outline: none;\n    border-color: $primary-color;\n    box-shadow: 0 0 0 3px rgba($primary-color, 0.1);\n  }\n  \n  &::placeholder {\n    color: $placeholder-color;\n  }\n  \n  // Sizes\n  &--sm {\n    padding: 6px 12px;\n    font-size: 14px;\n    min-height: 32px;\n  }\n  \n  &--md {\n    padding: 8px 16px;\n    font-size: 16px;\n    min-height: 40px;\n  }\n  \n  &--lg {\n    padding: 12px 20px;\n    font-size: 18px;\n    min-height: 48px;\n  }\n  \n  // States\n  &--success {\n    border-color: $success-color;\n    \n    &:focus {\n      box-shadow: 0 0 0 3px rgba($success-color, 0.1);\n    }\n  }\n  \n  &--warning {\n    border-color: $warning-color;\n    \n    &:focus {\n      box-shadow: 0 0 0 3px rgba($warning-color, 0.1);\n    }\n  }\n  \n  &--error {\n    border-color: $error-color;\n    \n    &:focus {\n      border-color: $error-color;\n      box-shadow: 0 0 0 3px rgba($error-color, 0.1);\n    }\n  }\n  \n  &--disabled {\n    background-color: #f5f5f5;\n    cursor: not-allowed;\n    opacity: 0.6;\n  }\n}\n\n.helperText {\n  font-size: 12px;\n  margin-top: 4px;\n  \n  &--default {\n    color: $placeholder-color;\n  }\n  \n  &--success {\n    color: $success-color;\n  }\n  \n  &--warning {\n    color: $warning-color;\n  }\n  \n  &--error {\n    color: $error-color;\n  }\n}",
+          "type": "scss"
+        }
+      ],
+      "tags": ["input", "form", "text", "validation"],
+      "dependencies": ["clsx"]
+    },
+    {
+      "name": "Badge",
+      "package": "@meli/ui",
+      "version": "2.1.0",
+      "description": "Small status indicator component for labels and notifications",
+      "language": "tsx",
+      "style": {
+        "type": "css",
+        "entry": "Badge.module.css"
+      },
+      "props": [
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "required": true,
+          "description": "Badge content"
+        },
+        {
+          "name": "variant",
+          "type": "'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info'",
+          "required": false,
+          "default": "default",
+          "description": "Visual variant of the badge"
+        },
+        {
+          "name": "size",
+          "type": "'sm' | 'md' | 'lg'",
+          "required": false,
+          "default": "md",
+          "description": "Size of the badge"
+        },
+        {
+          "name": "dot",
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "Whether to show as a dot indicator"
+        }
+      ],
+      "variants": [
+        {
+          "name": "new",
+          "description": "New item indicator",
+          "props": {
+            "variant": "primary",
+            "size": "sm"
+          }
+        },
+        {
+          "name": "sale",
+          "description": "Sale/discount indicator",
+          "props": {
+            "variant": "error",
+            "size": "md"
+          }
+        },
+        {
+          "name": "notification",
+          "description": "Notification dot",
+          "props": {
+            "variant": "error",
+            "dot": true,
+            "size": "sm"
+          }
+        }
+      ],
+      "code": "import React from 'react';\nimport { clsx } from 'clsx';\nimport styles from './Badge.module.css';\n\nexport interface BadgeProps {\n  children: React.ReactNode;\n  variant?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';\n  size?: 'sm' | 'md' | 'lg';\n  dot?: boolean;\n  className?: string;\n}\n\nexport const Badge: React.FC<BadgeProps> = ({\n  children,\n  variant = 'default',\n  size = 'md',\n  dot = false,\n  className,\n  ...props\n}) => {\n  if (dot) {\n    return (\n      <span\n        className={clsx(\n          styles.badge,\n          styles.badgeDot,\n          styles[`badge--${variant}`],\n          styles[`badge--${size}`],\n          className\n        )}\n        {...props}\n      />\n    );\n  }\n\n  return (\n    <span\n      className={clsx(\n        styles.badge,\n        styles[`badge--${variant}`],\n        styles[`badge--${size}`],\n        className\n      )}\n      {...props}\n    >\n      {children}\n    </span>\n  );\n};",
+      "assets": [
+        {
+          "path": "Badge.module.css",
+          "contents": ".badge {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  font-weight: 500;\n  border-radius: 12px;\n  white-space: nowrap;\n}\n\n.badgeDot {\n  width: 8px;\n  height: 8px;\n  border-radius: 50%;\n  padding: 0;\n}\n\n/* Variants */\n.badge--default {\n  background-color: #e0e0e0;\n  color: #333;\n}\n\n.badge--primary {\n  background-color: #3483fa;\n  color: white;\n}\n\n.badge--secondary {\n  background-color: #6c757d;\n  color: white;\n}\n\n.badge--success {\n  background-color: #28a745;\n  color: white;\n}\n\n.badge--warning {\n  background-color: #ffc107;\n  color: #333;\n}\n\n.badge--error {\n  background-color: #dc3545;\n  color: white;\n}\n\n.badge--info {\n  background-color: #17a2b8;\n  color: white;\n}\n\n/* Sizes */\n.badge--sm {\n  padding: 2px 6px;\n  font-size: 10px;\n  min-height: 16px;\n}\n\n.badge--md {\n  padding: 4px 8px;\n  font-size: 12px;\n  min-height: 20px;\n}\n\n.badge--lg {\n  padding: 6px 12px;\n  font-size: 14px;\n  min-height: 24px;\n}\n\n/* Dot sizes */\n.badgeDot.badge--sm {\n  width: 6px;\n  height: 6px;\n}\n\n.badgeDot.badge--md {\n  width: 8px;\n  height: 8px;\n}\n\n.badgeDot.badge--lg {\n  width: 10px;\n  height: 10px;\n}",
+          "type": "css"
+        }
+      ],
+      "tags": ["badge", "status", "indicator", "label"],
+      "dependencies": ["clsx"]
+    },
+    {
+      "name": "ProductCard",
+      "package": "@meli/commerce",
+      "version": "1.5.0",
+      "description": "Specialized card component for displaying product information with image, title, price, and actions",
+      "language": "tsx",
+      "style": {
+        "type": "scss",
+        "entry": "styles/product-card.scss"
+      },
+      "props": [
+        {
+          "name": "product",
+          "type": "{ id: string; title: string; price: number; currency?: string; image: string; discount?: number; rating?: number; reviews?: number; freeShipping?: boolean; }",
+          "required": true,
+          "description": "Product data object"
+        },
+        {
+          "name": "size",
+          "type": "'compact' | 'standard' | 'large'",
+          "required": false,
+          "default": "standard",
+          "description": "Card size variant"
+        },
+        {
+          "name": "showActions",
+          "type": "boolean",
+          "required": false,
+          "default": true,
+          "description": "Whether to show action buttons"
+        },
+        {
+          "name": "onAddToCart",
+          "type": "(productId: string) => void",
+          "required": false,
+          "description": "Add to cart handler"
+        },
+        {
+          "name": "onFavorite",
+          "type": "(productId: string) => void",
+          "required": false,
+          "description": "Add to favorites handler"
+        },
+        {
+          "name": "onClick",
+          "type": "(productId: string) => void",
+          "required": false,
+          "description": "Card click handler"
+        }
+      ],
+      "variants": [
+        {
+          "name": "grid-item",
+          "description": "Optimized for product grid layouts",
+          "props": {
+            "size": "standard",
+            "showActions": true
+          }
+        },
+        {
+          "name": "list-item",
+          "description": "Optimized for product list layouts",
+          "props": {
+            "size": "compact",
+            "showActions": false
+          }
+        },
+        {
+          "name": "featured",
+          "description": "Large featured product display",
+          "props": {
+            "size": "large",
+            "showActions": true
+          }
+        }
+      ],
+      "code": "import React from 'react';\nimport { clsx } from 'clsx';\nimport styles from './ProductCard.module.css';\n\ninterface Product {\n  id: string;\n  title: string;\n  price: number;\n  currency?: string;\n  image: string;\n  discount?: number;\n  rating?: number;\n  reviews?: number;\n  freeShipping?: boolean;\n}\n\nexport interface ProductCardProps {\n  product: Product;\n  size?: 'compact' | 'standard' | 'large';\n  showActions?: boolean;\n  onAddToCart?: (productId: string) => void;\n  onFavorite?: (productId: string) => void;\n  onClick?: (productId: string) => void;\n  className?: string;\n}\n\nexport const ProductCard: React.FC<ProductCardProps> = ({\n  product,\n  size = 'standard',\n  showActions = true,\n  onAddToCart,\n  onFavorite,\n  onClick,\n  className,\n}) => {\n  const { id, title, price, currency = '$', image, discount, rating, reviews, freeShipping } = product;\n  \n  const finalPrice = discount ? price * (1 - discount / 100) : price;\n  const hasDiscount = discount && discount > 0;\n\n  const handleCardClick = () => {\n    onClick?.(id);\n  };\n\n  const handleAddToCart = (e: React.MouseEvent) => {\n    e.stopPropagation();\n    onAddToCart?.(id);\n  };\n\n  const handleFavorite = (e: React.MouseEvent) => {\n    e.stopPropagation();\n    onFavorite?.(id);\n  };\n\n  return (\n    <div\n      className={clsx(\n        styles.productCard,\n        styles[`productCard--${size}`],\n        {\n          [styles['productCard--clickable']]: !!onClick,\n        },\n        className\n      )}\n      onClick={handleCardClick}\n    >\n      <div className={styles.imageContainer}>\n        <img src={image} alt={title} className={styles.image} />\n        {hasDiscount && (\n          <div className={styles.discountBadge}>\n            -{discount}%\n          </div>\n        )}\n        {freeShipping && (\n          <div className={styles.shippingBadge}>\n            Free shipping\n          </div>\n        )}\n      </div>\n      \n      <div className={styles.content}>\n        <h3 className={styles.title}>{title}</h3>\n        \n        {rating && (\n          <div className={styles.rating}>\n            <span className={styles.stars}>{'★'.repeat(Math.floor(rating))}</span>\n            <span className={styles.ratingText}>({reviews || 0})</span>\n          </div>\n        )}\n        \n        <div className={styles.priceContainer}>\n          {hasDiscount && (\n            <span className={styles.originalPrice}>\n              {currency}{price.toFixed(2)}\n            </span>\n          )}\n          <span className={styles.finalPrice}>\n            {currency}{finalPrice.toFixed(2)}\n          </span>\n        </div>\n        \n        {showActions && (\n          <div className={styles.actions}>\n            <button\n              className={styles.addToCartButton}\n              onClick={handleAddToCart}\n              disabled={!onAddToCart}\n            >\n              Add to Cart\n            </button>\n            <button\n              className={styles.favoriteButton}\n              onClick={handleFavorite}\n              disabled={!onFavorite}\n              aria-label=\"Add to favorites\"\n            >\n              ♡\n            </button>\n          </div>\n        )}\n      </div>\n    </div>\n  );\n};",
+      "assets": [
+        {
+          "path": "styles/product-card.scss",
+          "contents": "$primary-color: #3483fa;\n$success-color: #28a745;\n$error-color: #dc3545;\n$text-color: #333;\n$muted-color: #666;\n$border-color: #e0e0e0;\n\n.productCard {\n  background: white;\n  border: 1px solid $border-color;\n  border-radius: 8px;\n  overflow: hidden;\n  transition: all 0.2s ease;\n  \n  &--clickable {\n    cursor: pointer;\n    \n    &:hover {\n      transform: translateY(-2px);\n      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);\n    }\n  }\n  \n  // Size variants\n  &--compact {\n    .imageContainer {\n      height: 120px;\n    }\n    \n    .title {\n      font-size: 14px;\n      line-height: 1.3;\n    }\n    \n    .content {\n      padding: 8px;\n    }\n  }\n  \n  &--standard {\n    .imageContainer {\n      height: 200px;\n    }\n    \n    .content {\n      padding: 12px;\n    }\n  }\n  \n  &--large {\n    .imageContainer {\n      height: 300px;\n    }\n    \n    .title {\n      font-size: 18px;\n    }\n    \n    .content {\n      padding: 16px;\n    }\n  }\n}\n\n.imageContainer {\n  position: relative;\n  overflow: hidden;\n  background: #f8f9fa;\n}\n\n.image {\n  width: 100%;\n  height: 100%;\n  object-fit: cover;\n  transition: transform 0.2s ease;\n  \n  .productCard:hover & {\n    transform: scale(1.05);\n  }\n}\n\n.discountBadge {\n  position: absolute;\n  top: 8px;\n  left: 8px;\n  background: $error-color;\n  color: white;\n  padding: 4px 8px;\n  border-radius: 4px;\n  font-size: 12px;\n  font-weight: 600;\n}\n\n.shippingBadge {\n  position: absolute;\n  top: 8px;\n  right: 8px;\n  background: $success-color;\n  color: white;\n  padding: 4px 8px;\n  border-radius: 4px;\n  font-size: 10px;\n  font-weight: 600;\n}\n\n.content {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n}\n\n.title {\n  font-size: 16px;\n  font-weight: 500;\n  color: $text-color;\n  margin: 0;\n  line-height: 1.4;\n  display: -webkit-box;\n  -webkit-line-clamp: 2;\n  -webkit-box-orient: vertical;\n  overflow: hidden;\n}\n\n.rating {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  font-size: 14px;\n}\n\n.stars {\n  color: #ffc107;\n}\n\n.ratingText {\n  color: $muted-color;\n  font-size: 12px;\n}\n\n.priceContainer {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n\n.originalPrice {\n  text-decoration: line-through;\n  color: $muted-color;\n  font-size: 14px;\n}\n\n.finalPrice {\n  font-size: 18px;\n  font-weight: 600;\n  color: $text-color;\n}\n\n.actions {\n  display: flex;\n  gap: 8px;\n  margin-top: auto;\n}\n\n.addToCartButton {\n  flex: 1;\n  background: $primary-color;\n  color: white;\n  border: none;\n  border-radius: 6px;\n  padding: 8px 16px;\n  font-size: 14px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: background-color 0.2s ease;\n  \n  &:hover:not(:disabled) {\n    background: darken($primary-color, 10%);\n  }\n  \n  &:disabled {\n    opacity: 0.6;\n    cursor: not-allowed;\n  }\n}\n\n.favoriteButton {\n  background: transparent;\n  border: 1px solid $border-color;\n  border-radius: 6px;\n  padding: 8px;\n  font-size: 16px;\n  cursor: pointer;\n  transition: all 0.2s ease;\n  \n  &:hover:not(:disabled) {\n    background: rgba($primary-color, 0.1);\n    border-color: $primary-color;\n  }\n  \n  &:disabled {\n    opacity: 0.6;\n    cursor: not-allowed;\n  }\n}",
+          "type": "scss"
+        }
+      ],
+      "tags": ["product", "card", "commerce", "ecommerce", "shopping"],
+      "dependencies": ["clsx"]
+    }
+  ],
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-01-10T10:00:00Z",
+    "totalComponents": 5,
+    "packages": ["@meli/ui", "@meli/commerce"],
+    "tags": ["button", "card", "input", "badge", "product", "form", "layout", "commerce"]
+  }
+}

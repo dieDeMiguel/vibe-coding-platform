@@ -9,6 +9,12 @@ export * from './normalizer'
 // Client utilities
 export * from './client'
 
+// Configuration utilities
+export * from './config'
+
+// Fake server implementation
+export * from './fake-server'
+
 // Re-export commonly used items for convenience
 export {
   type NormalizedComponentSpec,
@@ -32,3 +38,11 @@ export {
   getXMCPClient,
   updateXMCPConfig,
 } from './client'
+
+export {
+  fakeListComponents,
+  fakeGetComponent,
+  getCatalogInfo,
+  searchComponents,
+  clearCatalogCache,
+} from './fake-server'
