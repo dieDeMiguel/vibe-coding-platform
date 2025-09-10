@@ -95,3 +95,27 @@ export const GetComponentResponseSchema = z.object({
 })
 
 export type GetComponentResponse = z.infer<typeof GetComponentResponseSchema>
+
+// XMCP Configuration
+export const XMCPConfigSchema = z.object({
+  baseUrl: z.string(),
+  authToken: z.string().optional(),
+  timeout: z.number().default(30000),
+  enabled: z.boolean().default(true),
+})
+
+export type XMCPConfig = z.infer<typeof XMCPConfigSchema>
+
+// Default configuration
+export const DEFAULT_XMCP_CONFIG: XMCPConfig = {
+  baseUrl: 'http://localhost:3001/v1/xmcp',
+  timeout: 30000,
+  enabled: true,
+}
+
+// Error type
+export interface XMCPError {
+  code: string
+  message: string
+  details?: unknown
+}

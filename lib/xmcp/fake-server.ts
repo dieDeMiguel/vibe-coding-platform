@@ -125,3 +125,46 @@ export async function fakeGetComponent(
   
   return { component }
 }
+
+export async function getCatalogInfo() {
+  const catalog = await getCatalog()
+  
+  if (!catalog) {
+    return {
+      stats: {
+        totalComponents: 0,
+        packages: [],
+        tags: [],
+        languages: [],
+        hasCache: false,
+        lastLoaded: null,
+      },
+      metadata: {},
+    }
+  }
+  
+  const packages = [...new Set(catalog.components.map(c => c.package))]
+  const allTags = catalog.components.flatMap(c => c.tags || [])
+  const tags = [...new Set(allTags)]
+  const languages = [...new Set(catalog.components.map(c => c.language))]
+  
+  return {
+    stats: {
+      totalComponents: catalog.components.length,
+      packages,
+      tags,
+      languages,
+      hasCache: !!catalogCache,
+      lastLoaded: catalog.lastLoaded,
+    },
+    metadata: {},
+  }
+}
+
+export async function searchComponents(query: ListComponentsRequest = {}) {
+  return fakeListComponents(query)
+}
+
+export function clearCatalogCache() {
+  catalogCache = null
+}

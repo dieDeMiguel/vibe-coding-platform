@@ -117,3 +117,59 @@ function normalizeAssets(assets: unknown): ComponentAsset[] {
     type: a.type ? String(a.type) as 'scss' | 'css' | 'json' | 'md' | 'svg' | 'png' | 'jpg' : undefined,
   }))
 }
+
+export function normalizeComponentList(components: unknown[]): ComponentListItem[] {
+  if (!Array.isArray(components)) return []
+  
+  return components.map(component => normalizeComponentListItem(component)).filter(Boolean) as ComponentListItem[]
+}
+
+export function normalizeComponentListItem(data: unknown): ComponentListItem | null {
+  try {
+    const component = normalizeComponentSpec(data)
+    
+    return {
+      name: component.name,
+      description: component.description,
+      package: component.package,
+      version: component.version,
+      style: component.style,
+      tags: component.tags,
+    }
+  } catch (error) {
+    console.warn('Failed to normalize component list item:', error)
+    return null
+  }
+}
+
+export function filterComponents(
+  components: ComponentListItem[],
+  query?: string,
+  tags?: string[],
+  packageName?: string
+): ComponentListItem[] {
+  let filtered = [...components]
+  
+  if (query) {
+    const searchQuery = query.toLowerCase()
+    filtered = filtered.filter(component => 
+      component.name.toLowerCase().includes(searchQuery) ||
+      component.description.toLowerCase().includes(searchQuery) ||
+      component.tags?.some(tag => tag.toLowerCase().includes(searchQuery))
+    )
+  }
+  
+  if (tags && tags.length > 0) {
+    filtered = filtered.filter(component =>
+      component.tags?.some(tag => tags.includes(tag))
+    )
+  }
+  
+  if (packageName) {
+    filtered = filtered.filter(component => 
+      component.package === packageName
+    )
+  }
+  
+  return filtered
+}
