@@ -1,5 +1,45 @@
 import type { Sandbox } from '@vercel/sandbox'
-import type { NormalizedComponentSpec } from '@/lib/xmcp/types'
+
+// Types for component specifications
+interface ComponentProp {
+  name: string;
+  type: string;
+  required: boolean;
+  default?: any;
+  description: string;
+}
+
+interface ComponentVariant {
+  name: string;
+  description: string;
+  props: Record<string, any>;
+}
+
+interface ComponentStyle {
+  type: string;
+  entry: string;
+}
+
+interface ComponentAsset {
+  type: string;
+  path: string;
+  contents?: string;
+}
+
+interface NormalizedComponentSpec {
+  name: string;
+  package: string;
+  version: string;
+  description: string;
+  language: string;
+  style?: ComponentStyle;
+  props: ComponentProp[];
+  variants: ComponentVariant[];
+  code: string;
+  assets: ComponentAsset[];
+  tags: string[];
+  dependencies: string[];
+}
 
 export interface GeneratedFile {
   path: string
@@ -141,15 +181,144 @@ function generateEnhancedTSXFile(component: NormalizedComponentSpec, variant?: s
     return component.code
   }
 
-  const propsInterface = generatePropsInterface(component)
-  const componentImpl = generateEnhancedComponentImplementation(component, variant)
-  const imports = generateImports(component)
+  // Generate simple, working component
+  const generatedCode = generateSimpleComponent(component, variant)
+  return validateAndCleanCode(generatedCode)
+}
 
-  return `${imports}
+/**
+ * Generate a simple, guaranteed-to-work component
+ */
+function generateSimpleComponent(component: NormalizedComponentSpec, variant?: string): string {
+  const componentName = component.name
+  const isButton = componentName.toLowerCase() === 'button'
+  const isCard = componentName.toLowerCase() === 'card'
+  
+  // CRITICAL: Never import from MCP packages - they don't exist in npm
+  // Components are generated files, not npm packages
+  
+  return `import React from 'react'
+import clsx from 'clsx'
+import styles from './${componentName}.module.css'
 
-${propsInterface}
+export interface ${componentName}Props {
+  children?: React.ReactNode
+  className?: string
+  variant?: string
+  size?: string
+  disabled?: boolean
+  loading?: boolean
+  onClick?: () => void
+  padding?: string
+  clickable?: boolean
+}
 
-${componentImpl}`
+export const ${componentName} = React.forwardRef<
+  HTMLDivElement,
+  ${componentName}Props
+>(({ 
+  children, 
+  className, 
+  variant = "${isButton ? 'primary' : 'default'}", 
+  size = "md",
+  disabled = false,
+  loading = false,
+  onClick,
+  padding = "md",
+  clickable = false,
+  ...props 
+}, ref) => {
+  ${isButton ? `
+  return (
+    <button
+      ref={ref}
+      className={clsx(
+        styles.button,
+        variant && styles[\`button--\${variant}\`],
+        size && styles[\`button--\${size}\`],
+        {
+          [styles['button--disabled']]: disabled,
+          [styles['button--loading']]: loading,
+        },
+        className
+      )}
+      disabled={disabled || loading}
+      onClick={onClick}
+      {...props}
+    >
+      {loading ? (
+        <span className={styles.spinner}>Loading...</span>
+      ) : (
+        children
+      )}
+    </button>
+  )` : isCard ? `
+  return (
+    <div
+      ref={ref}
+      className={clsx(
+        styles.card,
+        variant && styles[\`card--\${variant}\`],
+        padding && styles[\`card--padding-\${padding}\`],
+        {
+          [styles['card--clickable']]: clickable,
+        },
+        className
+      )}
+      onClick={clickable ? onClick : undefined}
+      {...props}
+    >
+      {children}
+    </div>
+  )` : `
+  return (
+    <div
+      ref={ref}
+      className={clsx(styles.${componentName.toLowerCase()}, className)}
+      {...props}
+    >
+      {children}
+    </div>
+  )`}
+})
+
+${componentName}.displayName = '${componentName}'
+
+// Export as default for easier importing
+export default ${componentName}`
+}
+
+/**
+ * Validate and clean generated code to prevent MCP package imports
+ */
+function validateAndCleanCode(code: string): string {
+  // List of problematic imports to remove
+  const forbiddenImports = [
+    '@modelcontextprotocol/mcp-client-web',
+    '@modelcontextprotocol/mcp-inspector', 
+    '@modelcontextprotocol/mcp-ui',
+    '@meli/ui',
+    '@modelcontextprotocol/sdk',
+    'mcp-client-web'
+  ]
+  
+  let cleanCode = code
+  
+  // Remove any forbidden import lines
+  forbiddenImports.forEach(pkg => {
+    const importRegex = new RegExp(`import.*from\\s+['"]\s*${pkg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\s*['"].*`, 'gm')
+    cleanCode = cleanCode.replace(importRegex, `// ❌ REMOVED: Invalid import from ${pkg} (package doesn't exist)`)
+  })
+  
+  // Add warning comment at the top if we removed anything
+  if (cleanCode !== code) {
+    cleanCode = `// ⚠️ AUTO-CLEANED: Removed invalid MCP package imports
+// Use file-based imports instead: import { Component } from '@/components/Component/Component'
+
+${cleanCode}`
+  }
+  
+  return cleanCode
 }
 
 /**
@@ -201,27 +370,45 @@ ${propsLines}
  * Enhanced component implementation with better patterns
  */
 function generateEnhancedComponentImplementation(component: NormalizedComponentSpec, variant?: string): string {
-  const defaultProps = component.props
-    .filter(prop => !prop.required && prop.default !== undefined)
-    .map(prop => `  ${prop.name} = ${JSON.stringify(prop.default)},`)
-    .join('\n')
+  // Create a set of all props to avoid duplicates
+  const allPropNames = new Set()
+  
+  // Add component props with defaults
+  const propsWithDefaults = (component.props || []).map(prop => {
+    allPropNames.add(prop.name)
+    if (!prop.required && prop.default !== undefined) {
+      return `  ${prop.name} = ${JSON.stringify(prop.default)}`
+    }
+    return `  ${prop.name}`
+  })
 
-  const propDestructuring = component.props.map(prop => prop.name).join(',\n  ')
-  const variantProps = variant ? 
-    component.variants.find(v => v.name === variant)?.props || {} : {}
+  // Add standard props only if not already included
+  const standardProps = []
+  if (!allPropNames.has('children')) {
+    standardProps.push('  children')
+  }
+  if (!allPropNames.has('className')) {
+    standardProps.push('  className')
+  }
 
   // Generate component-specific implementation
   const componentBody = generateComponentBody(component, variant)
+  const propsInterface = generatePropsInterface(component)
 
-  return `export const ${component.name} = React.forwardRef<
+  // Create final props list without duplicates
+  const propsList = [
+    ...propsWithDefaults,
+    ...standardProps,
+    '  ...props'
+  ].join(',\n')
+
+  return `${propsInterface}
+
+export const ${component.name} = React.forwardRef<
   HTMLDivElement,
   ${component.name}Props
 >(({
-${propDestructuring ? `  ${propDestructuring},` : ''}
-  children,
-  className,
-${defaultProps}
-  ...props
+${propsList}
 }, ref) => {
 ${generateVariantLogic(component, variant)}
 
@@ -230,7 +417,10 @@ ${componentBody}
   )
 })
 
-${component.name}.displayName = '${component.name}'`
+${component.name}.displayName = '${component.name}'
+
+// Export as default for easier importing
+export default ${component.name}`
 }
 
 /**
@@ -245,12 +435,12 @@ function generateComponentBody(component: NormalizedComponentSpec, variant?: str
       return `    <button
       ref={ref}
       className={clsx(
-        styles.${className},
-        variant && styles[\`\${className}--\${variant}\`],
-        size && styles[\`\${className}--\${size}\`],
+        styles.button,
+        variant && styles[\`button--\${variant}\`],
+        size && styles[\`button--\${size}\`],
         {
-          [styles[\`\${className}--disabled\`]]: disabled,
-          [styles[\`\${className}--loading\`]]: loading,
+          [styles['button--disabled']]: disabled,
+          [styles['button--loading']]: loading,
         },
         className
       )}
@@ -305,11 +495,11 @@ function generateComponentBody(component: NormalizedComponentSpec, variant?: str
       return `    <div
       ref={ref}
       className={clsx(
-        styles.${className},
-        variant && styles[\`\${className}--\${variant}\`],
-        padding && styles[\`\${className}--padding-\${padding}\`],
+        styles.card,
+        variant && styles[\`card--\${variant}\`],
+        padding && styles[\`card--padding-\${padding}\`],
         {
-          [styles[\`\${className}--clickable\`]]: clickable,
+          [styles['card--clickable']]: clickable,
         },
         className
       )}
@@ -668,7 +858,7 @@ function generateEnhancedMetadata(component: NormalizedComponentSpec, variant?: 
     props: component.props,
     variants: component.variants,
     tags: component.tags,
-    dependencies: component.dependencies,
+    dependencies: ['clsx'], // Only real dependencies, never MCP packages
     files: {
       component: `${component.name}.tsx`,
       styles: `${component.name}.module.css`,
@@ -677,8 +867,26 @@ function generateEnhancedMetadata(component: NormalizedComponentSpec, variant?: 
       readme: 'README.md',
     },
     usage: {
-      import: `import { ${component.name} } from '@/components/${component.name}'`,
+      imports: {
+        recommended: `import { ${component.name} } from '@/components/${component.name}/${component.name}'`,
+        alternative: `import ${component.name} from '@/components/${component.name}/${component.name}'`,
+        avoid: `import { ${component.name} } from '@meli/ui' // ❌ WILL FAIL - package doesn't exist`
+      },
       example: generateUsageExample(component, variant),
+      aiInstructions: {
+        dos: [
+          "Use full path imports with @/components/",
+          "Only use props listed in the Props table",
+          "Pass children as JSX content, not as a prop",
+          "Check component.json for valid variants and props"
+        ],
+        donts: [
+          "Don't import from @meli/ui package (doesn't exist)",
+          "Don't pass children both as prop and JSX content",
+          "Don't use props not listed in the interface",
+          "Don't use relative imports like '../components/'"
+        ]
+      }
     },
   }
 
@@ -910,8 +1118,26 @@ ${component.description}
 
 ## Usage
 
+### Import Options
+
+#### Named Export (Recommended)
+\`\`\`tsx
+import { ${component.name} } from '@/components/${component.name}/${component.name}'
+\`\`\`
+
+#### Default Export (Also works)
+\`\`\`tsx
+import ${component.name} from '@/components/${component.name}/${component.name}'
+\`\`\`
+
+#### Directory Import (if available)
 \`\`\`tsx
 import { ${component.name} } from '@/components/${component.name}'
+\`\`\`
+
+### Basic Example
+\`\`\`tsx
+import { ${component.name} } from '@/components/${component.name}/${component.name}'
 
 function Example() {
   return (
@@ -919,6 +1145,31 @@ function Example() {
   )
 }
 \`\`\`
+
+### ⚠️ IMPORTANT USAGE GUIDELINES
+
+#### For AI/LLM Integration:
+1. **ALWAYS use the full path import**: \`import { ${component.name} } from '@/components/${component.name}/${component.name}'\`
+2. **DO NOT use package imports**: Avoid \`import { ${component.name} } from '@meli/ui'\` (package doesn't exist)
+3. **USE ONLY these props**: Check the Props table below for valid properties
+4. **AVOID duplicate children**: Don't pass both \`children\` prop and JSX children
+5. **WORKING EXAMPLE**:
+   \`\`\`tsx
+   import { ${component.name} } from '@/components/${component.name}/${component.name}'
+   
+   function MyComponent() {
+     return (
+       <${component.name} variant="primary" size="md">
+         Button Text
+       </${component.name}>
+     )
+   }
+   \`\`\`
+
+### Notes
+- ✅ **Both named and default exports supported**
+- ❌ **Package imports will fail** (no @meli/ui package)
+- 🔧 **Use full paths for reliability**
 
 ## Props
 

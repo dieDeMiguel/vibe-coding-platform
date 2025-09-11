@@ -2,6 +2,20 @@
 
 This tool provides access to a catalog of pre-built UI components that can be integrated into applications running in the Vercel Sandbox. It connects to the XMCP (eXtended Model Context Protocol) server to discover and fetch component definitions.
 
+🚨 **CRITICAL WARNING: MCP Components are FILES, not NPM PACKAGES**
+
+❌ **NEVER IMPORT FROM PACKAGES:**
+- @mcp/components
+- @modelcontextprotocol/mcp-client-web
+- @meli/ui
+- Any @mcp/* or @modelcontextprotocol/* package
+
+✅ **ALWAYS IMPORT FROM GENERATED FILES:**
+- `import { Button } from '@/components/Button/Button'`
+- `import { Card } from '@/components/Card/Card'`
+
+These components are generated as local files in your sandbox, NOT as npm packages.
+
 ## Capabilities
 
 ### List Components

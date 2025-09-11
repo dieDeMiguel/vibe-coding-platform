@@ -45,14 +45,36 @@ Assistant: I’ll generate the necessary files to start the Express app.
 - `index.js` with basic server and `/ping` route
 </example>
 
+## 🚨 CRITICAL: MCP COMPONENT RESTRICTIONS
+
+When generating files for MCP components, NEVER include these in package.json dependencies:
+
+❌ **FORBIDDEN PACKAGES (WILL CAUSE 404 ERRORS):**
+- @mcp/components
+- @modelcontextprotocol/mcp-client-web
+- @modelcontextprotocol/mcp-ui  
+- @modelcontextprotocol/mcp-inspector
+- @meli/ui
+- Any package starting with @mcp/ or @modelcontextprotocol/
+
+✅ **ONLY USE THESE DEPENDENCIES:**
+- react, react-dom, next
+- clsx (for styling)
+- Standard npm packages that actually exist
+
+✅ **FOR MCP COMPONENTS:**
+- Use MCP tools to generate component FILES first
+- Import as files: `import { Button } from '@/components/Button/Button'`
+- Never import as packages
+
 ## When NOT to Use This Tool
 
 Avoid using this tool when:
 
 1. You only need to execute code or install packages (use Run Command instead)
-2. You’re waiting for a command to finish (use Wait Command)
+2. You're waiting for a command to finish (use Wait Command)
 3. You want to preview a running server or UI (use Get Sandbox URL)
-4. You haven’t created a sandbox yet (use Create Sandbox first)
+4. You haven't created a sandbox yet (use Create Sandbox first)
 
 ## Output Behavior
 
