@@ -2,11 +2,22 @@ import type { NextConfig } from 'next'
 import { withBotId } from 'botid/next/config'
 
 const nextConfig: NextConfig = {
+  experimental: {
+    esmExternals: 'loose',
+  },
   webpack(config) {
     config.module.rules.push({
       test: /\.md/,
       type: 'asset/source',
     })
+    // Fix for micromark chunk loading issues
+    config.resolve = {
+      ...config.resolve,
+      fallback: {
+        ...config.resolve?.fallback,
+        fs: false,
+      },
+    }
     return config
   },
   turbopack: {
