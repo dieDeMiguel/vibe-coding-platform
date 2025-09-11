@@ -1,14 +1,13 @@
-// MCP integration temporarily disabled
-// import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp";
-// import { experimental_createMCPClient } from "ai";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { experimental_createMCPClient } from "ai";
 
-// const client = await experimental_createMCPClient({
-// 	transport: new StreamableHTTPClientTransport(
-// 		"http://localhost:3000/api/xmcp",
-// 		{},
-// 	),
-// });
+const client = await experimental_createMCPClient({
+	transport: new StreamableHTTPClientTransport(
+		new URL(process.env.MCP_ENDPOINT || "http://localhost:3001/mcp"),
+		{},
+	),
+});
 
 export async function getMcpTools() {
-	return {}; // return await client.tools();
+	return await client.tools();
 }

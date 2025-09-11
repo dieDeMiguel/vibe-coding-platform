@@ -82,18 +82,41 @@ async function handleListComponents({
     data: { action: 'list', query, status: 'listing' },
   })
 
-  const baseUrl = process.env.MCP_BASE_URL || 'http://localhost:3000/api/xmcp'
-  const response = await fetch(`${baseUrl}/tools/list_components`, {
+  const mcpEndpoint = process.env.MCP_ENDPOINT || 'http://localhost:3001/mcp'
+  const response = await fetch(mcpEndpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, tags, package: packageFilter }),
+    headers: { 
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: Date.now(),
+      method: 'tools/call',
+      params: {
+        name: 'list_components',
+        arguments: { query, tags, packageFilter }
+      }
+    }),
   })
 
   if (!response.ok) {
     throw new Error(`Failed to list components: ${response.statusText}`)
   }
 
-  const { items, total } = await response.json()
+  const mcpResponse = await response.json()
+  
+  if (mcpResponse.error) {
+    throw new Error(`MCP Error: ${mcpResponse.error.message}`)
+  }
+  
+  // Parse the components from MCP response
+  const componentsText = mcpResponse.result?.content?.[0]?.text
+  if (!componentsText) {
+    throw new Error('Invalid MCP response format')
+  }
+  
+  const { items, total } = JSON.parse(componentsText)
   const componentNames = items.map((item: { name: string }) => item.name)
 
   writer.write({
@@ -128,19 +151,42 @@ async function handleFetchComponent({
   // Get sandbox
   const sandbox = await Sandbox.get({ sandboxId })
 
-  // Get component from XMCP
-  const baseUrl = process.env.MCP_BASE_URL || 'http://localhost:3000/api/xmcp'
-  const response = await fetch(`${baseUrl}/tools/get_component`, {
+  // Get component from MCP server
+  const mcpEndpoint = process.env.MCP_ENDPOINT || 'http://localhost:3001/mcp'
+  const response = await fetch(mcpEndpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: componentName, variant }),
+    headers: { 
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: Date.now(),
+      method: 'tools/call',
+      params: {
+        name: 'get_component',
+        arguments: { name: componentName, variant }
+      }
+    }),
   })
 
   if (!response.ok) {
     throw new Error(`Failed to get component: ${response.statusText}`)
   }
 
-  const { component } = await response.json()
+  const mcpResponse = await response.json()
+  
+  if (mcpResponse.error) {
+    throw new Error(`MCP Error: ${mcpResponse.error.message}`)
+  }
+  
+  // Parse the component from MCP response
+  const componentText = mcpResponse.result?.content?.[0]?.text
+  if (!componentText) {
+    throw new Error('Invalid MCP response format')
+  }
+  
+  const { component } = JSON.parse(componentText)
 
   writer.write({
     id: toolCallId,

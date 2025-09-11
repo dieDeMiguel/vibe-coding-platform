@@ -696,9 +696,12 @@ function generateTypeDefinitions(component: NormalizedComponentSpec): string {
 export type ${component.name}Variant = ${component.variants.map(v => `'${v.name}'`).join(' | ')}
 
 export interface ${component.name}VariantProps {
-${component.variants.map(v => 
-  `  ${v.name}: ${JSON.stringify(v.props, null, 2).replace(/\n/g, '\n  ')}`
-).join('\n')}
+${component.variants.map(v => {
+  const propsString = Object.entries(v.props || {})
+    .map(([key, value]) => `    ${key}: ${typeof value === 'string' ? `'${value}'` : JSON.stringify(value)}`)
+    .join(';\n')
+  return `  ${v.name}: {\n${propsString}\n  }`
+}).join(';\n')}
 }` : ''
 
   return `import type { ReactNode } from 'react'

@@ -10,7 +10,7 @@ import { NextResponse } from "next/server";
 import { DEFAULT_MODEL } from "@/ai/constants";
 import { getAvailableModels, getModelOptions } from "@/ai/gateway";
 import { tools } from "@/ai/tools";
-// import { getMcpTools } from "@/ai/tools/mcp";
+import { getMcpTools } from "@/ai/tools/mcp";
 import type { ChatUIMessage } from "@/components/chat/types";
 import prompt from "./prompt.md";
 
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
 		);
 	}
 
-	// const mcpTools = await getMcpTools();
+	const mcpTools = await getMcpTools();
 
 	return createUIMessageStreamResponse({
 		stream: createUIMessageStream({
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
 						}),
 					),
 					stopWhen: stepCountIs(20),
-					tools: { ...tools({ modelId, writer }) }, // ...mcpTools
+					tools: { ...tools({ modelId, writer }), ...mcpTools },
 					onError: (error) => {
 						console.error("Error communicating with AI");
 						console.error(JSON.stringify(error, null, 2));
