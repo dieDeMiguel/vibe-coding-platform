@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getComponent } from '@/lib/mcp/client';
 import { normalizeComponentToRegistryItem } from '@/lib/mcp/normalizer';
 import { ZodError } from 'zod';
@@ -7,8 +8,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ component: string }> }
 ) {
+  const { component } = await params;
+  
   try {
-    const { component } = await params;
     
     if (!component) {
       return NextResponse.json(
@@ -67,7 +69,7 @@ export async function GET(
       return NextResponse.json(
         {
           error: 'Component not found',
-          details: `Component '${params.component}' does not exist`,
+          details: `Component '${component}' does not exist`,
           timestamp: new Date().toISOString(),
         },
         { 

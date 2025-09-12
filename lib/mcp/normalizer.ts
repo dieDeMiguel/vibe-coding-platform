@@ -122,13 +122,6 @@ ${componentImpl}`;
 }
 
 /**
- * Generates a basic component structure when no code is provided (legacy)
- */
-function generateBasicComponent(component: MCPComponentResponse['component']): string {
-  return generateSelfContainedComponent(component);
-}
-
-/**
  * Generates TypeScript props interface
  */
 function generatePropsInterface(component: MCPComponentResponse['component']): string {
@@ -272,13 +265,6 @@ export const ${component.name} = React.forwardRef<
 ${component.name}.displayName = '${component.name}';
 
 export default ${component.name};`;
-}
-
-/**
- * Generates component implementation (legacy)
- */
-function generateComponentImplementation(component: MCPComponentResponse['component']): string {
-  return generateEnhancedComponentImplementation(component);
 }
 
 /**
@@ -471,7 +457,8 @@ function generateBasicCSS(componentName: string): string {
 /**
  * Extracts npm dependencies from component
  */
-function extractDependencies(component: MCPComponentResponse['component']): string[] {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function extractDependencies(_component: MCPComponentResponse['component']): string[] {
   const dependencies = ['clsx']; // Always include clsx for styling
   
   // Add React if not already included

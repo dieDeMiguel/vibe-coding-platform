@@ -37,7 +37,7 @@ export async function listComponents(options?: {
   }>;
   total: number;
 }> {
-  const client = await getMCPClient();
+  await getMCPClient();
   
   // Call MCP server directly using JSON-RPC
   const response = await fetch(MCP_ENDPOINT, {
@@ -109,7 +109,7 @@ export async function getComponent(name: string, variant?: string): Promise<{
     tags?: string[];
   };
 }> {
-  const client = await getMCPClient();
+  await getMCPClient();
   
   // Call MCP server directly using JSON-RPC
   const response = await fetch(MCP_ENDPOINT, {
