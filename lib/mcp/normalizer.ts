@@ -177,7 +177,7 @@ function generateButtonComponent(component: MCPComponentResponse['component']): 
   return `export const Button = React.forwardRef<
   HTMLButtonElement,
   ButtonProps
->(({ hierarchy = 'loud', size = 'large', disabled = false, loading = false, children, className, onClick, ...props }, ref) => {
+>(({ hierarchy = 'loud', size = 'large', disabled = false, loading = false, children, className, onClick, fullWidth, ...props }, ref) => {
   return (
     <button
       ref={ref}
@@ -187,6 +187,7 @@ function generateButtonComponent(component: MCPComponentResponse['component']): 
         styles[\`button--\${size}\`],
         disabled && styles['button--disabled'],
         loading && styles['button--loading'],
+        fullWidth && styles['button--fullWidth'],
         className
       )}
       disabled={disabled || loading}
@@ -365,6 +366,10 @@ function generateButtonCSS(): string {
 
 .button--loading {
   cursor: wait;
+}
+
+.button--fullWidth {
+  width: 100%;
 }
 
 .spinner {
