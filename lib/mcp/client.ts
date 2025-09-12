@@ -97,13 +97,13 @@ export async function getComponent(name: string, variant?: string): Promise<{
       name: string;
       type: string;
       required: boolean;
-      default?: any;
+      default?: unknown;
       description?: string;
     }>;
     variants: Array<{
       name: string;
       description?: string;
-      props: Record<string, any>;
+      props: Record<string, unknown>;
     }>;
     code?: string;
     tags?: string[];

@@ -16,13 +16,13 @@ interface MCPComponentResponse {
       name: string;
       type: string;
       required: boolean;
-      default?: any;
+      default?: unknown;
       description?: string;
     }>;
     variants: Array<{
       name: string;
       description?: string;
-      props: Record<string, any>;
+      props: Record<string, unknown>;
     }>;
     code?: string;
     tags?: string[];
@@ -174,7 +174,11 @@ function generateEnhancedComponentImplementation(component: MCPComponentResponse
  * Generates Button component implementation
  */
 function generateButtonComponent(component: MCPComponentResponse['component']): string {
-  return `export const Button = React.forwardRef<
+  return `import React from 'react';
+import clsx from 'clsx';
+import styles from './${component.name}.module.css';
+
+export const Button = React.forwardRef<
   HTMLButtonElement,
   ButtonProps
 >(({ hierarchy = 'loud', size = 'large', disabled = false, loading = false, children, className, onClick, fullWidth, ...props }, ref) => {
@@ -210,7 +214,11 @@ export default Button;`;
  * Generates Badge component implementation  
  */
 function generateBadgeComponent(component: MCPComponentResponse['component']): string {
-  return `export const Badge = React.forwardRef<
+  return `import React from 'react';
+import clsx from 'clsx';
+import styles from './${component.name}.module.css';
+
+export const Badge = React.forwardRef<
   HTMLSpanElement,
   BadgeProps
 >(({ variant = 'default', size = 'medium', children, className, ...props }, ref) => {
@@ -242,7 +250,11 @@ function generateGenericComponent(component: MCPComponentResponse['component']):
   const propNames = component.props?.map(prop => prop.name) || [];
   const destructuring = propNames.length > 0 ? `${propNames.join(', ')}, ` : '';
   
-  return `export const ${component.name} = React.forwardRef<
+  return `import React from 'react';
+import clsx from 'clsx';
+import styles from './${component.name}.module.css';
+
+export const ${component.name} = React.forwardRef<
   HTMLDivElement,
   ${component.name}Props
 >(({ ${destructuring}children, className, ...props }, ref) => {
