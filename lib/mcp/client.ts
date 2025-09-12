@@ -4,16 +4,26 @@ import { experimental_createMCPClient } from "ai";
 // MCP Client configuration
 const MCP_BASE_URL = process.env.MCP_BASE_URL || "https://meli-xmcp-poc.vercel.app";
 const MCP_ENDPOINT = process.env.MCP_ENDPOINT || `${MCP_BASE_URL}/mcp`;
+const MCP_AUTH_TOKEN = process.env.MCP_AUTH_TOKEN || process.env.MCP_PRODUCTION_TOKEN;
 
 // Create MCP client instance
 let mcpClient: Awaited<ReturnType<typeof experimental_createMCPClient>> | null = null;
 
 async function getMCPClient() {
   if (!mcpClient) {
+    // Prepare headers with authentication if token is available
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (MCP_AUTH_TOKEN) {
+      headers.Authorization = `Bearer ${MCP_AUTH_TOKEN}`;
+    }
+
     mcpClient = await experimental_createMCPClient({
       transport: new StreamableHTTPClientTransport(
         new URL(MCP_ENDPOINT),
-        {},
+        headers,
       ),
     });
   }

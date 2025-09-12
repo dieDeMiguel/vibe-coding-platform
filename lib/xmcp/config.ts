@@ -66,10 +66,10 @@ export function validateXMCPConfig(config: Partial<XMCPConfig>): {
  */
 export function createDevelopmentConfig(): XMCPConfig {
   return {
-    baseUrl: 'http://localhost:3000/api/xmcp',
+    baseUrl: 'https://meli-xmcp-poc.vercel.app/api/xmcp', // Usar MCP remoto en desarrollo
     enabled: true,
     timeout: 10000,
-    // No auth token for development
+    // authToken se configurará desde variables de entorno
   }
 }
 
