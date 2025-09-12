@@ -1,6 +1,6 @@
-import { registryItemSchema, type RegistryItem } from './registry-schema';
+import { registryItemSchema, registryIndexSchema, type RegistryItem, type RegistryIndex } from '@/lib/schema/registry';
 
-// MCP Response structure (based on actual MCP server response)
+// MCP Component Response structure (based on actual MCP server response)
 interface MCPComponentResponse {
   component: {
     name: string;
@@ -25,13 +25,26 @@ interface MCPComponentResponse {
       props: Record<string, any>;
     }>;
     code?: string;
+    tags?: string[];
   };
+}
+
+// MCP List Response structure
+interface MCPListResponse {
+  items: Array<{
+    name: string;
+    package: string;
+    version: string;
+    description: string;
+    tags?: string[];
+  }>;
+  total: number;
 }
 
 /**
  * Transforms MCP component response to ShadCN-compatible registry item
  */
-export function transformMCPToRegistryItem(mcpResponse: MCPComponentResponse): RegistryItem {
+export function normalizeComponentToRegistryItem(mcpResponse: MCPComponentResponse): RegistryItem {
   const { component } = mcpResponse;
   
   // Create files array based on component structure
@@ -52,7 +65,7 @@ export function transformMCPToRegistryItem(mcpResponse: MCPComponentResponse): R
   }
   
   // 2. Style files
-  if (component.style?.type === 'scss') {
+  if (component.style?.type === 'scss' && component.style.entries.length > 0) {
     const scssContent = component.style.entries
       .map(entry => `@import '${entry}';`)
       .join('\n');
@@ -78,11 +91,26 @@ export function transformMCPToRegistryItem(mcpResponse: MCPComponentResponse): R
     registryDependencies: [], // No internal registry dependencies for MCP components
     dependencies: extractDependencies(component),
     files,
-    category: 'UI',
+    category: determineCategory(component),
   };
   
   // Validate against schema
   return registryItemSchema.parse(registryItem);
+}
+
+/**
+ * Transforms MCP list response to registry index
+ */
+export function normalizeListToRegistryIndex(mcpResponse: MCPListResponse): RegistryIndex {
+  const indexItems = mcpResponse.items.map(item => ({
+    name: item.name.toLowerCase(),
+    title: item.name,
+    description: item.description,
+    category: determineCategory(item),
+  }));
+  
+  // Validate against schema
+  return registryIndexSchema.parse(indexItems);
 }
 
 /**
@@ -105,7 +133,7 @@ ${componentImpl}`;
  * Generates TypeScript props interface
  */
 function generatePropsInterface(component: MCPComponentResponse['component']): string {
-  if (!component.props.length) {
+  if (!component.props || component.props.length === 0) {
     return `export interface ${component.name}Props {
   children?: React.ReactNode;
   className?: string;
@@ -129,7 +157,7 @@ ${propsLines}
  * Generates component implementation
  */
 function generateComponentImplementation(component: MCPComponentResponse['component']): string {
-  const propNames = component.props.map(prop => prop.name);
+  const propNames = component.props?.map(prop => prop.name) || [];
   const destructuring = propNames.length > 0 ? `${propNames.join(', ')}, ` : '';
   
   return `export const ${component.name} = React.forwardRef<
@@ -169,8 +197,38 @@ function generateBasicCSS(componentName: string): string {
 function extractDependencies(component: MCPComponentResponse['component']): string[] {
   const dependencies = ['clsx']; // Always include clsx for styling
   
-  // Add any other standard dependencies that might be needed
+  // Add React if not already included
+  if (!dependencies.includes('react')) {
+    dependencies.push('react');
+  }
+  
   // Note: We avoid adding @andes/* or @mcp/* packages as they don't exist in npm
   
   return dependencies;
+}
+
+/**
+ * Determines component category based on name and properties
+ */
+function determineCategory(component: { name: string; tags?: string[] }): string {
+  if (component.tags?.length) {
+    return component.tags[0];
+  }
+  
+  const name = component.name.toLowerCase();
+  
+  // Common UI component categories
+  if (['button', 'input', 'select', 'textarea', 'checkbox', 'radio'].includes(name)) {
+    return 'Form';
+  }
+  
+  if (['card', 'modal', 'dialog', 'drawer', 'sheet'].includes(name)) {
+    return 'Layout';
+  }
+  
+  if (['alert', 'toast', 'notification', 'badge'].includes(name)) {
+    return 'Feedback';
+  }
+  
+  return 'UI';
 }

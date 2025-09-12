@@ -18,6 +18,15 @@ export const registryItemSchema = z.object({
   category: z.string().default("UI"),
 });
 
+// Schema para la lista de componentes
+export const registryIndexSchema = z.array(z.object({
+  name: z.string(),
+  title: z.string(),
+  description: z.string().optional(),
+  category: z.string().default("UI"),
+}));
+
 // Tipos TypeScript derivados de los schemas
 export type RegistryFile = z.infer<typeof registryFileSchema>;
 export type RegistryItem = z.infer<typeof registryItemSchema>;
+export type RegistryIndex = z.infer<typeof registryIndexSchema>;

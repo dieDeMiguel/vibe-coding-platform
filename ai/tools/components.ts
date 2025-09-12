@@ -4,8 +4,7 @@ import { Sandbox } from '@vercel/sandbox'
 import { getRichError } from './get-rich-error'
 import { tool } from 'ai'
 import { generateComponentFiles, type NormalizedComponentSpec } from './components/file-generator'
-import { transformMCPToRegistryItem } from '@/lib/mcp-transformer'
-import type { RegistryItem } from '@/lib/registry-schema'
+import type { RegistryItem } from '@/lib/schema/registry'
 import description from './components.md'
 import z from 'zod/v3'
 
@@ -84,18 +83,32 @@ async function handleListComponents({
     data: { action: 'list', query, status: 'listing' },
   })
 
-  const baseUrl = process.env.MCP_BASE_URL || 'http://localhost:3000/api/xmcp'
-  const response = await fetch(`${baseUrl}/tools/list_components`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, tags, package: packageFilter }),
-  })
+  // Get components list from internal registry endpoint
+  const baseUrl = process.env.NODE_ENV === 'development' 
+    ? 'http://localhost:3000' 
+    : process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : 'http://localhost:3000';
+      
+  const queryParams = new URLSearchParams();
+  if (query) queryParams.set('query', query);
+  if (tags?.length) queryParams.set('tags', tags.join(','));
+  if (packageFilter) queryParams.set('package', packageFilter);
+  
+  const indexUrl = `${baseUrl}/r/index${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  
+  const response = await fetch(indexUrl, {
+    headers: {
+      'Accept': 'application/json',
+    },
+  });
 
   if (!response.ok) {
     throw new Error(`Failed to list components: ${response.statusText}`)
   }
 
-  const { items, total } = await response.json()
+  const items = await response.json()
+  const total = items.length
   const componentNames = items.map((item: { name: string }) => item.name)
 
   writer.write({
@@ -105,7 +118,7 @@ async function handleListComponents({
   })
 
   const componentList = items.map((item: any) => 
-    `**${item.name}** (${item.package} v${item.version})\n  ${item.description}`
+    `**${item.title}** (${item.category})\n  ${item.description || 'No description available'}`
   ).join('\n\n')
 
   return `Found ${total} component${total !== 1 ? 's' : ''}:\n\n${componentList}`
@@ -215,45 +228,41 @@ async function handleFetchComponent({
   // Get sandbox
   const sandbox = await Sandbox.get({ sandboxId })
 
-  // Get component from MCP and transform to registry item
-  const mcpEndpoint = process.env.MCP_ENDPOINT || "http://localhost:3001/mcp";
-  const response = await fetch(mcpEndpoint, {
-    method: 'POST',
+  // Get component from internal registry endpoint
+  const baseUrl = process.env.NODE_ENV === 'development' 
+    ? 'http://localhost:3000' 
+    : process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : 'http://localhost:3000';
+      
+  const registryUrl = `${baseUrl}/r/${componentName}${variant ? `?variant=${variant}` : ''}`;
+  
+  const response = await fetch(registryUrl, {
     headers: {
-      'Content-Type': 'application/json',
       'Accept': 'application/json',
     },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'tools/call',
-      params: {
-        name: 'get_component',
-        arguments: { name: componentName }
-      }
-    })
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to get component from MCP: ${response.statusText}`)
+    if (response.status === 404) {
+      throw new Error(`Component '${componentName}' not found`)
+    }
+    throw new Error(`Failed to get component: ${response.statusText}`)
   }
 
-  const mcpData = await response.json();
+  // Get registry item directly
+  const registryItem = await response.json();
   
-  if (mcpData.error) {
-    throw new Error(`MCP Error: ${mcpData.error.message}`)
-  }
-
-  if (!mcpData.result?.content?.[0]?.text) {
-    throw new Error('Invalid MCP response format')
-  }
-
-  // Parse MCP response and transform to registry item
-  const componentData = JSON.parse(mcpData.result.content[0].text);
-  const registryItem = transformMCPToRegistryItem(componentData);
-  
-  // Convert registry item back to NormalizedComponentSpec for file generation
-  const component = convertRegistryToNormalizedSpec(registryItem, componentData.component);
+  // Convert registry item back to NormalizedComponentSpec for compatibility
+  const component = convertRegistryToNormalizedSpec(registryItem, {
+    name: registryItem.title,
+    package: '@andes/ui',
+    version: '1.0.0',
+    description: registryItem.description,
+    language: 'tsx',
+    props: [],
+    variants: [],
+  });
 
   writer.write({
     id: toolCallId,
