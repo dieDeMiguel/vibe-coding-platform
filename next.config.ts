@@ -2,9 +2,6 @@ import type { NextConfig } from 'next'
 import { withBotId } from 'botid/next/config'
 
 const nextConfig: NextConfig = {
-  experimental: {
-    esmExternals: 'loose',
-  },
   webpack(config) {
     config.module.rules.push({
       test: /\.md/,

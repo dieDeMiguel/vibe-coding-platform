@@ -5,10 +5,10 @@ import { ZodError } from 'zod';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { component: string } }
+  { params }: { params: Promise<{ component: string }> }
 ) {
   try {
-    const { component } = params;
+    const { component } = await params;
     
     if (!component) {
       return NextResponse.json(
