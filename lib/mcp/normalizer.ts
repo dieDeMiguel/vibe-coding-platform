@@ -50,19 +50,11 @@ export function normalizeComponentToRegistryItem(mcpResponse: MCPComponentRespon
   // Create files array based on component structure
   const files = [];
   
-  // 1. Main component TSX file
-  if (component.code) {
-    files.push({
-      name: `${component.name}.tsx`,
-      content: component.code,
-    });
-  } else {
-    // Generate basic component structure if no code provided
-    files.push({
-      name: `${component.name}.tsx`,
-      content: generateBasicComponent(component),
-    });
-  }
+  // 1. Main component TSX file - always generate self-contained version
+  files.push({
+    name: `${component.name}.tsx`,
+    content: generateSelfContainedComponent(component),
+  });
   
   // 2. Style files
   if (component.style?.type === 'scss' && component.style.entries.length > 0) {
@@ -76,10 +68,10 @@ export function normalizeComponentToRegistryItem(mcpResponse: MCPComponentRespon
     });
   }
   
-  // 3. CSS module fallback
+  // 3. CSS module with enhanced styles
   files.push({
     name: `${component.name}.module.css`,
-    content: generateBasicCSS(component.name),
+    content: generateEnhancedCSS(component.name),
   });
   
   // Create registry item
@@ -114,11 +106,11 @@ export function normalizeListToRegistryIndex(mcpResponse: MCPListResponse): Regi
 }
 
 /**
- * Generates a basic component structure when no code is provided
+ * Generates a self-contained component without external package dependencies
  */
-function generateBasicComponent(component: MCPComponentResponse['component']): string {
+function generateSelfContainedComponent(component: MCPComponentResponse['component']): string {
   const propsInterface = generatePropsInterface(component);
-  const componentImpl = generateComponentImplementation(component);
+  const componentImpl = generateEnhancedComponentImplementation(component);
   
   return `import React from 'react';
 import clsx from 'clsx';
@@ -127,6 +119,13 @@ import styles from './${component.name}.module.css';
 ${propsInterface}
 
 ${componentImpl}`;
+}
+
+/**
+ * Generates a basic component structure when no code is provided (legacy)
+ */
+function generateBasicComponent(component: MCPComponentResponse['component']): string {
+  return generateSelfContainedComponent(component);
 }
 
 /**
@@ -154,9 +153,90 @@ ${propsLines}
 }
 
 /**
- * Generates component implementation
+ * Generates enhanced component implementation with specific behavior per component type
  */
-function generateComponentImplementation(component: MCPComponentResponse['component']): string {
+function generateEnhancedComponentImplementation(component: MCPComponentResponse['component']): string {
+  const componentName = component.name;
+  const componentType = componentName.toLowerCase();
+  
+  // Generate component-specific implementation
+  switch (componentType) {
+    case 'button':
+      return generateButtonComponent(component);
+    case 'badge':
+      return generateBadgeComponent(component);
+    default:
+      return generateGenericComponent(component);
+  }
+}
+
+/**
+ * Generates Button component implementation
+ */
+function generateButtonComponent(component: MCPComponentResponse['component']): string {
+  return `export const Button = React.forwardRef<
+  HTMLButtonElement,
+  ButtonProps
+>(({ hierarchy = 'loud', size = 'large', disabled = false, loading = false, children, className, onClick, ...props }, ref) => {
+  return (
+    <button
+      ref={ref}
+      className={clsx(
+        styles.button,
+        styles[\`button--\${hierarchy}\`],
+        styles[\`button--\${size}\`],
+        disabled && styles['button--disabled'],
+        loading && styles['button--loading'],
+        className
+      )}
+      disabled={disabled || loading}
+      onClick={onClick}
+      {...props}
+    >
+      {loading && <span className={styles.spinner} />}
+      {children}
+    </button>
+  );
+});
+
+Button.displayName = 'Button';
+
+export default Button;`;
+}
+
+/**
+ * Generates Badge component implementation  
+ */
+function generateBadgeComponent(component: MCPComponentResponse['component']): string {
+  return `export const Badge = React.forwardRef<
+  HTMLSpanElement,
+  BadgeProps
+>(({ variant = 'default', size = 'medium', children, className, ...props }, ref) => {
+  return (
+    <span
+      ref={ref}
+      className={clsx(
+        styles.badge,
+        styles[\`badge--\${variant}\`],
+        styles[\`badge--\${size}\`],
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </span>
+  );
+});
+
+Badge.displayName = 'Badge';
+
+export default Badge;`;
+}
+
+/**
+ * Generates generic component implementation
+ */
+function generateGenericComponent(component: MCPComponentResponse['component']): string {
   const propNames = component.props?.map(prop => prop.name) || [];
   const destructuring = propNames.length > 0 ? `${propNames.join(', ')}, ` : '';
   
@@ -181,7 +261,186 @@ export default ${component.name};`;
 }
 
 /**
- * Generates basic CSS for component
+ * Generates component implementation (legacy)
+ */
+function generateComponentImplementation(component: MCPComponentResponse['component']): string {
+  return generateEnhancedComponentImplementation(component);
+}
+
+/**
+ * Generates enhanced CSS with component-specific styles
+ */
+function generateEnhancedCSS(componentName: string): string {
+  const componentType = componentName.toLowerCase();
+  
+  switch (componentType) {
+    case 'button':
+      return generateButtonCSS();
+    case 'badge':
+      return generateBadgeCSS();
+    default:
+      return generateBasicCSS(componentName);
+  }
+}
+
+/**
+ * Generates Button CSS styles
+ */
+function generateButtonCSS(): string {
+  return `.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.button--loud {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.button--loud:hover {
+  background-color: #2563eb;
+}
+
+.button--quiet {
+  background-color: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.button--quiet:hover {
+  background-color: #e5e7eb;
+}
+
+.button--mute {
+  background-color: transparent;
+  color: #6b7280;
+}
+
+.button--mute:hover {
+  background-color: #f9fafb;
+}
+
+.button--transparent {
+  background-color: transparent;
+  color: #3b82f6;
+}
+
+.button--transparent:hover {
+  background-color: #eff6ff;
+}
+
+.button--small {
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+}
+
+.button--medium {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+}
+
+.button--large {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+.button--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button--loading {
+  cursor: wait;
+}
+
+.spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}`;
+}
+
+/**
+ * Generates Badge CSS styles
+ */
+function generateBadgeCSS(): string {
+  return `.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+  white-space: nowrap;
+}
+
+.badge--default {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.badge--success {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.badge--error {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.badge--warning {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.badge--info {
+  background-color: #dbeafe;
+  color: #2563eb;
+}
+
+.badge--small {
+  padding: 0.125rem 0.5rem;
+  font-size: 0.625rem;
+}
+
+.badge--medium {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.badge--large {
+  padding: 0.375rem 1rem;
+  font-size: 0.875rem;
+}`;
+}
+
+/**
+ * Generates basic CSS for component (fallback)
  */
 function generateBasicCSS(componentName: string): string {
   const className = componentName.toLowerCase();
