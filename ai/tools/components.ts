@@ -3,7 +3,9 @@ import type { DataPart } from '../messages/data-parts'
 import { Sandbox } from '@vercel/sandbox'
 import { getRichError } from './get-rich-error'
 import { tool } from 'ai'
-import { generateComponentFiles } from './components/file-generator'
+import { generateComponentFiles, type NormalizedComponentSpec } from './components/file-generator'
+import { transformMCPToRegistryItem } from '@/lib/mcp-transformer'
+import type { RegistryItem } from '@/lib/registry-schema'
 import description from './components.md'
 import z from 'zod/v3'
 
@@ -109,6 +111,91 @@ async function handleListComponents({
   return `Found ${total} component${total !== 1 ? 's' : ''}:\n\n${componentList}`
 }
 
+/**
+ * Converts registry item back to NormalizedComponentSpec for compatibility
+ */
+function convertRegistryToNormalizedSpec(registryItem: RegistryItem, originalComponent: any): NormalizedComponentSpec {
+  return {
+    name: registryItem.title,
+    package: originalComponent.package || '@andes/ui',
+    version: originalComponent.version || '1.0.0',
+    description: registryItem.description || '',
+    language: originalComponent.language || 'tsx',
+    style: originalComponent.style,
+    props: originalComponent.props || [],
+    variants: originalComponent.variants || [],
+    code: registryItem.files.find(f => f.name.endsWith('.tsx'))?.content,
+    assets: [],
+    tags: [registryItem.category],
+    dependencies: registryItem.dependencies,
+  }
+}
+
+/**
+ * Generates component files from registry item
+ */
+async function generateComponentFilesFromRegistry({
+  registryItem,
+  component,
+  variant,
+  sandbox,
+  generateDemo = true,
+}: {
+  registryItem: RegistryItem
+  component: NormalizedComponentSpec
+  variant?: string
+  sandbox: Sandbox
+  generateDemo?: boolean
+}) {
+  // Use registry item files directly
+  const files = registryItem.files.map(file => ({
+    path: `components/${registryItem.title}/${file.name}`,
+    content: file.content,
+    type: file.name.endsWith('.tsx') ? 'tsx' as const :
+          file.name.endsWith('.scss') ? 'scss' as const :
+          file.name.endsWith('.css') ? 'css' as const : 'tsx' as const,
+  }))
+
+  // Add demo files if requested
+  if (generateDemo) {
+    const demoContent = generateBasicDemoPage(registryItem)
+    const demoPath = `app/demo/${registryItem.name}/page.tsx`
+    files.push({
+      path: demoPath,
+      content: demoContent,
+      type: 'tsx',
+    })
+
+    // Generate demo layout
+    const demoLayoutContent = generateBasicDemoLayout()
+    files.push({
+      path: `app/demo/layout.tsx`,
+      content: demoLayoutContent,
+      type: 'tsx',
+    })
+  }
+
+  // Write files to sandbox
+  await sandbox.writeFiles(files.map(file => ({
+    path: file.path,
+    content: Buffer.from(file.content, 'utf-8')
+  })))
+  
+  files.forEach(file => console.log(`✓ Generated: ${file.path}`))
+
+  return {
+    files,
+    demoPath: generateDemo ? `app/demo/${registryItem.name}/page.tsx` : undefined,
+    componentPath: `components/${registryItem.title}/${registryItem.title}.tsx`,
+    metadata: {
+      name: registryItem.title,
+      variant,
+      generatedAt: new Date().toISOString(),
+      filesCount: files.length,
+    },
+  }
+}
+
 async function handleFetchComponent({
   componentName, variant, sandboxId, generateDemo, writer, toolCallId,
 }: {
@@ -128,19 +215,45 @@ async function handleFetchComponent({
   // Get sandbox
   const sandbox = await Sandbox.get({ sandboxId })
 
-  // Get component from XMCP
-  const baseUrl = process.env.MCP_BASE_URL || 'http://localhost:3000/api/xmcp'
-  const response = await fetch(`${baseUrl}/tools/get_component`, {
+  // Get component from MCP and transform to registry item
+  const mcpEndpoint = process.env.MCP_ENDPOINT || "http://localhost:3001/mcp";
+  const response = await fetch(mcpEndpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: componentName, variant }),
-  })
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tools/call',
+      params: {
+        name: 'get_component',
+        arguments: { name: componentName }
+      }
+    })
+  });
 
   if (!response.ok) {
-    throw new Error(`Failed to get component: ${response.statusText}`)
+    throw new Error(`Failed to get component from MCP: ${response.statusText}`)
   }
 
-  const { component } = await response.json()
+  const mcpData = await response.json();
+  
+  if (mcpData.error) {
+    throw new Error(`MCP Error: ${mcpData.error.message}`)
+  }
+
+  if (!mcpData.result?.content?.[0]?.text) {
+    throw new Error('Invalid MCP response format')
+  }
+
+  // Parse MCP response and transform to registry item
+  const componentData = JSON.parse(mcpData.result.content[0].text);
+  const registryItem = transformMCPToRegistryItem(componentData);
+  
+  // Convert registry item back to NormalizedComponentSpec for file generation
+  const component = convertRegistryToNormalizedSpec(registryItem, componentData.component);
 
   writer.write({
     id: toolCallId,
@@ -148,9 +261,9 @@ async function handleFetchComponent({
     data: { action: 'fetch', componentName, variant, status: 'generating' },
   })
 
-  // Generate files
-  const result = await generateComponentFiles({
-    component, variant, sandbox, generateDemo,
+  // Generate files based on registry item
+  const result = await generateComponentFilesFromRegistry({
+    registryItem, component, variant, sandbox, generateDemo,
   })
 
   writer.write({
@@ -167,4 +280,74 @@ async function handleFetchComponent({
   
   return `Successfully generated ${componentName}${variant ? ` (${variant} variant)` : ''}!\n\n` +
     `Files created:\n${filesList}${result.demoPath ? `\n\nDemo: ${result.demoPath}` : ''}`
+}
+
+/**
+ * Generate basic demo page for registry item
+ */
+function generateBasicDemoPage(registryItem: RegistryItem): string {
+  const importPath = `@/components/${registryItem.title}/${registryItem.title}`
+  
+  return `'use client'
+
+import React from 'react'
+import { ${registryItem.title} } from '${importPath}'
+
+export default function ${registryItem.title}Demo() {
+  return (
+    <div className="container mx-auto px-6 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          ${registryItem.title} Component
+        </h1>
+        <p className="text-lg text-gray-600">
+          ${registryItem.description || 'Component demonstration'}
+        </p>
+      </div>
+
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">
+          Basic Usage
+        </h2>
+        <div className="border rounded-lg p-6 bg-white">
+          <${registryItem.title}>
+            Sample content
+          </${registryItem.title}>
+        </div>
+      </section>
+    </div>
+  )
+}`
+}
+
+/**
+ * Generate basic demo layout
+ */
+function generateBasicDemoLayout(): string {
+  return `import type { ReactNode } from 'react'
+
+export default function DemoLayout({
+  children,
+}: {
+  children: ReactNode
+}) {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <nav className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold text-gray-900">
+            Component Demo
+          </h1>
+          <a
+            href="/"
+            className="text-blue-600 hover:text-blue-800 text-sm"
+          >
+            ← Back to App
+          </a>
+        </div>
+      </nav>
+      {children}
+    </div>
+  )
+}`
 }

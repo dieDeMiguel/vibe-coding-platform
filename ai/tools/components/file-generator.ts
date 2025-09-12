@@ -1,5 +1,45 @@
 import type { Sandbox } from '@vercel/sandbox'
-import type { NormalizedComponentSpec } from '@/lib/xmcp/types'
+
+// Inline type definitions (moved from removed @/lib/xmcp/types)
+export interface ComponentProp {
+  name: string
+  type: string
+  required: boolean
+  default?: any
+  description?: string
+}
+
+export interface ComponentVariant {
+  name: string
+  description?: string
+  props: Record<string, any>
+}
+
+export interface ComponentAsset {
+  type: string
+  path: string
+  contents?: string
+}
+
+export interface ComponentStyle {
+  type: 'scss' | 'css'
+  entries: string[]
+}
+
+export interface NormalizedComponentSpec {
+  name: string
+  package: string
+  version: string
+  description: string
+  language: string
+  style?: ComponentStyle
+  props: ComponentProp[]
+  variants: ComponentVariant[]
+  code?: string
+  assets: ComponentAsset[]
+  tags: string[]
+  dependencies: string[]
+}
 
 export interface GeneratedFile {
   path: string
