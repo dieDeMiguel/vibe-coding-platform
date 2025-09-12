@@ -190,6 +190,7 @@ function generateButtonComponent(component: MCPComponentResponse['component']): 
         className
       )}
       disabled={disabled || loading}
+      aria-busy={loading ? 'true' : undefined}
       onClick={onClick}
       {...props}
     >
