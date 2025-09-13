@@ -235,11 +235,6 @@ async function handleFetchComponent({
       
   const registryUrl = `${baseUrl}/r/${componentName}${variant ? `?variant=${variant}` : ''}`;
   
-  console.log('🔧 Component fetch debug:');
-  console.log('  NODE_ENV:', process.env.NODE_ENV);
-  console.log('  VERCEL_URL:', process.env.VERCEL_URL);
-  console.log('  baseUrl:', baseUrl);
-  console.log('  registryUrl:', registryUrl);
   
   const response = await fetch(registryUrl, {
     headers: {

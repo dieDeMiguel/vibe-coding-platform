@@ -1,7 +1,7 @@
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { experimental_createMCPClient } from "ai";
 
-// MCP Client configuration - Usando servidor local para pruebas
+// MCP Client configuration
 const MCP_BASE_URL = process.env.MCP_BASE_URL || "http://localhost:3001";
 const MCP_ENDPOINT = process.env.MCP_ENDPOINT || `${MCP_BASE_URL}/mcp`;
 const MCP_AUTH_TOKEN = process.env.MCP_AUTH_TOKEN;
@@ -10,9 +10,6 @@ let mcpClient: Awaited<ReturnType<typeof experimental_createMCPClient>> | null =
 
 async function getMCPClient() {
   if (!mcpClient) {
-    console.log('🔄 Conectando a MCP:', MCP_ENDPOINT);
-    console.log('🔑 Token configurado:', MCP_AUTH_TOKEN ? 'SÍ' : 'NO');
-    
     // Prepare headers with authentication if token is available
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -21,10 +18,7 @@ async function getMCPClient() {
     
     if (MCP_AUTH_TOKEN) {
       headers.Authorization = `Bearer ${MCP_AUTH_TOKEN}`;
-      console.log('🔐 Agregando token de autenticación');
     }
-    
-    console.log('📡 Headers que se enviarán:', JSON.stringify(headers, null, 2));
 
     mcpClient = await experimental_createMCPClient({
       transport: new StreamableHTTPClientTransport(
@@ -32,8 +26,6 @@ async function getMCPClient() {
         headers,
       ),
     });
-    
-    console.log('✅ Cliente MCP creado exitosamente');
   }
   return mcpClient;
 }
@@ -137,13 +129,7 @@ export async function getComponent(name: string, variant?: string): Promise<{
   
   if (MCP_AUTH_TOKEN) {
     headers.Authorization = `Bearer ${MCP_AUTH_TOKEN}`;
-    console.log('🔐 getComponent: Adding Authorization header');
-  } else {
-    console.log('⚠️ getComponent: No MCP_AUTH_TOKEN found');
   }
-  
-  console.log('📡 getComponent: Headers:', JSON.stringify(headers, null, 2));
-  console.log('🎯 getComponent: Calling:', MCP_ENDPOINT);
   
   const response = await fetch(MCP_ENDPOINT, {
     method: 'POST',
