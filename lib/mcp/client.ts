@@ -7,10 +7,6 @@ const MCP_BASE_URL = isDev ? "http://localhost:3001" : (process.env.MCP_BASE_URL
 const MCP_ENDPOINT = isDev ? `${MCP_BASE_URL}/mcp` : (process.env.MCP_ENDPOINT || `${MCP_BASE_URL}/mcp`);
 const MCP_AUTH_TOKEN = process.env.MCP_AUTH_TOKEN;
 
-console.log('MCP_BASE_URL', MCP_BASE_URL);
-console.log('MCP_ENDPOINT', MCP_ENDPOINT);
-console.log('MCP_AUTH_TOKEN', MCP_AUTH_TOKEN);
-
 // Legacy MCP client instance for backward compatibility
 let mcpClient: Awaited<ReturnType<typeof experimental_createMCPClient>> | null = null;
 
