@@ -17,11 +17,12 @@ This platform enables AI agents to build and run full applications within secure
 
 ## MCP Integration
 
-The platform connects to a remote MCP server to fetch UI components through a multi-layered architecture:
+The platform connects to a remote MCP server to fetch UI components:
 
 ### Connection Configuration
-- **MCP Server**: `https://meli-xmcp-poc.vercel.app/mcp`
-- **Environment Variables**: `MCP_BASE_URL` and `MCP_ENDPOINT`
+- **MCP Server**: Configurable via environment variables
+- **Development**: `http://localhost:3001/mcp` (local MCP server)
+- **Production**: Set via `MCP_BASE_URL` and `MCP_ENDPOINT` environment variables
 - **Protocol**: JSON-RPC over HTTP
 
 ### Component Workflow
@@ -31,9 +32,9 @@ The platform connects to a remote MCP server to fetch UI components through a mu
 4. **Integration**: Import components as files: `import { Button } from '@/components/Button/Button'`
 
 ### Architecture Components
-- `ai/tools/mcp.ts`: MCP client connection using Vercel AI SDK
+- `lib/mcp/client.ts`: MCP client connection and component fetching
+- `lib/mcp/normalizer.ts`: Component specification normalization with AI
 - `ai/tools/components.ts`: Component discovery and fetching logic
-- `ai/tools/components/file-generator.ts`: Local file generation from MCP specs
 - `app/api/chat/route.ts`: AI chat endpoint with MCP tool integration
 
 ## Environment Setup
@@ -41,9 +42,10 @@ The platform connects to a remote MCP server to fetch UI components through a mu
 Create a `.env.local` file with the following variables:
 
 ```bash
-# MCP Server Configuration
-MCP_BASE_URL=https://meli-xmcp-poc.vercel.app
-MCP_ENDPOINT=https://meli-xmcp-poc.vercel.app/mcp
+# MCP Server Configuration (Production)
+MCP_BASE_URL=https://your-mcp-server.vercel.app
+MCP_ENDPOINT=https://your-mcp-server.vercel.app/mcp
+MCP_AUTH_TOKEN=your_mcp_auth_token
 
 # AI Gateway Configuration
 VERCEL_OIDC_TOKEN=your_vercel_oidc_token
@@ -107,8 +109,9 @@ When working with MCP components:
 ```
 
 ### Key Files
-- `ai/tools/mcp.ts`: MCP client configuration
-- `ai/tools/components.ts`: Component management
+- `lib/mcp/client.ts`: MCP client configuration and connection
+- `lib/mcp/normalizer.ts`: Component normalization with AI
+- `ai/tools/components.ts`: Component management tools
 - `app/api/chat/route.ts`: AI chat API endpoint
 - `app/api/chat/prompt.md`: AI system prompt
 
@@ -117,14 +120,33 @@ When working with MCP components:
 Test the MCP server connection:
 
 ```bash
-curl -X POST https://meli-xmcp-poc.vercel.app/mcp \
+# Test local MCP server (development)
+curl -X POST http://localhost:3001/mcp/v1/tools/call \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{
     "jsonrpc": "2.0",
     "id": 1,
-    "method": "tools/list",
-    "params": {}
+    "method": "tools/call",
+    "params": {
+      "name": "list_components",
+      "arguments": {}
+    }
+  }'
+
+# Test remote MCP server (production)
+curl -X POST $MCP_ENDPOINT \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer $MCP_AUTH_TOKEN" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "list_components",
+      "arguments": {}
+    }
   }'
 ```
 
