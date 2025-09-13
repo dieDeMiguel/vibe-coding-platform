@@ -4,7 +4,7 @@ import { experimental_createMCPClient } from "ai";
 // MCP Client configuration - Usando servidor local para pruebas
 const MCP_BASE_URL = process.env.MCP_BASE_URL || "http://localhost:3001";
 const MCP_ENDPOINT = process.env.MCP_ENDPOINT || `${MCP_BASE_URL}/mcp`;
-const MCP_AUTH_TOKEN = process.env.MCP_AUTH_TOKEN || process.env.MCP_PRODUCTION_TOKEN || "36cefd998bf9d7fa9c193f6b98df01754ec1247fe1f8c9127d858fe7d448d2bd";
+const MCP_AUTH_TOKEN = process.env.MCP_AUTH_TOKEN;
 
 // Create MCP client instance
 let mcpClient: Awaited<ReturnType<typeof experimental_createMCPClient>> | null = null;
