@@ -1,5 +1,6 @@
-import { registryItemSchema, registryIndexSchema, type RegistryItem, type RegistryIndex } from '@/lib/schema/registry';
+import { registryItemSchema, type RegistryItem, type RegistryIndex } from '@/lib/schema/registry';
 import { generateObject } from 'ai';
+import { z } from 'zod';
 
 // MCP Component Response structure (based on actual MCP server response)
 interface MCPComponentResponse {
@@ -49,7 +50,7 @@ export async function normalizeComponentToRegistryItem(mcpResponse: MCPComponent
   console.log('normalizeComponentToRegistryItem received:', JSON.stringify(mcpResponse, null, 2));
   
   const { object } = await generateObject({
-    model:'gpt-4o-mini',
+    model: 'gpt-4o-mini',
     schema: registryItemSchema,
     prompt: `Transform this MCP component data into a ShadCN registry item format:
 
@@ -76,7 +77,13 @@ The component should be production-ready and follow best practices.`,
 export async function normalizeListToRegistryIndex(mcpResponse: MCPListResponse | unknown[]): Promise<RegistryIndex> {
   const { object } = await generateObject({
     model: 'gpt-4o-mini',
-    schema: registryIndexSchema,
+    output: 'array',
+    schema: z.object({
+      name: z.string(),
+      title: z.string(),
+      description: z.string().optional(),
+      category: z.string().default("UI"),
+    }),
     prompt: `Transform this MCP components list into a registry index format:
 
 ${JSON.stringify(mcpResponse, null, 2)}
