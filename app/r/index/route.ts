@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     });
     
     // Transform to registry index format
-    const registryIndex = normalizeListToRegistryIndex(mcpResponse);
+    const registryIndex = await normalizeListToRegistryIndex(mcpResponse);
     
     return NextResponse.json(registryIndex, {
       headers: {

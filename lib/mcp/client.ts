@@ -2,8 +2,8 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { experimental_createMCPClient } from "ai";
 
 // MCP Client configuration
-const MCP_BASE_URL = process.env.MCP_BASE_URL || "http://localhost:3001";
-const MCP_ENDPOINT = process.env.MCP_ENDPOINT || `${MCP_BASE_URL}/mcp`;
+const MCP_BASE_URL = "http://localhost:3001";
+const MCP_ENDPOINT = `${MCP_BASE_URL}/mcp`;
 const MCP_AUTH_TOKEN = process.env.MCP_AUTH_TOKEN;
 // Create MCP client instance
 let mcpClient: Awaited<ReturnType<typeof experimental_createMCPClient>> | null = null;

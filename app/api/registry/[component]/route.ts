@@ -30,7 +30,7 @@ export async function GET(
     const mcpResponse = await getComponent(component, variant);
     
     // Transform to registry item with validation
-    const registryItem = normalizeComponentToRegistryItem(mcpResponse);
+    const registryItem = await normalizeComponentToRegistryItem(mcpResponse);
     
     return NextResponse.json(registryItem, {
       headers: {
