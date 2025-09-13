@@ -6,9 +6,14 @@ const MCP_BASE_URL = process.env.MCP_BASE_URL || "http://localhost:3001";
 const MCP_ENDPOINT = process.env.MCP_ENDPOINT || `${MCP_BASE_URL}/mcp`;
 const MCP_AUTH_TOKEN = process.env.MCP_AUTH_TOKEN;
 
-console.log('MCP_BASE_URL', MCP_BASE_URL);
-console.log('MCP_ENDPOINT', MCP_ENDPOINT);
-console.log('MCP_AUTH_TOKEN', MCP_AUTH_TOKEN);
+  console.log('🔧 MCP Configuration Debug:');
+  console.log('  NODE_ENV:', process.env.NODE_ENV);
+  console.log('  MCP_BASE_URL:', MCP_BASE_URL);
+  console.log('  MCP_ENDPOINT:', MCP_ENDPOINT);
+  console.log('  MCP_AUTH_TOKEN:', MCP_AUTH_TOKEN ? 'SET' : 'NOT SET');
+  console.log('  MCP_PRODUCTION_TOKEN:', process.env.MCP_PRODUCTION_TOKEN ? 'SET' : 'NOT SET');
+  console.log('  Raw env MCP_BASE_URL:', process.env.MCP_BASE_URL);
+  console.log('  Raw env MCP_ENDPOINT:', process.env.MCP_ENDPOINT);
 
 // Create MCP client instance
 let mcpClient: Awaited<ReturnType<typeof experimental_createMCPClient>> | null = null;
