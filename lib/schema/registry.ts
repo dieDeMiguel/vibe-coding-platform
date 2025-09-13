@@ -16,6 +16,10 @@ export const registryItemSchema = z.object({
   dependencies: z.array(z.string()).default([]),
   files: z.array(registryFileSchema),  // archivos que forman el componente
   category: z.string().default("UI"),
+  examples: z.array(z.object({
+    title: z.string(),
+    code: z.string(),
+  })).optional(),
 });
 
 // Schema para la lista de componentes

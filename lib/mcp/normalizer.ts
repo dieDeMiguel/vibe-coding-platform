@@ -107,32 +107,53 @@ async function getDesignSpecifications(): Promise<string> {
  * Transforms MCP component response to ShadCN-compatible registry item using AI
  */
 export async function normalizeComponentToRegistryItem(mcpResponse: MCPComponentResponse | unknown): Promise<RegistryItem> {
-  console.log('normalizeComponentToRegistryItem received:', JSON.stringify(mcpResponse, null, 2));
   
   // First, get the design specifications from MCP
   const designSpecs = await getDesignSpecifications();
-  console.log('Retrieved design specifications from MCP');
   
   const { object } = await generateObject({
     model: 'gpt-4o-mini',
     schema: registryItemSchema,
-    prompt: `Transform this MCP component data into a ShadCN registry item format following the official Mercado Libre Design System specifications:
+    prompt: `You are generating a ShadCN registry item. Return ONLY a valid JSON object with the exact structure shown below.
 
 COMPONENT DATA:
 ${JSON.stringify(mcpResponse, null, 2)}
 
-OFFICIAL DESIGN SYSTEM SPECIFICATIONS:
+DESIGN SPECIFICATIONS:
 ${designSpecs}
 
-CRITICAL: Follow the design specifications above exactly. They contain the official implementation guidelines.
+INSTRUCTIONS:
+1. Follow the design specifications exactly - they contain all implementation details
+2. Generate complete, working React components with TypeScript
+3. Always include "react" and "clsx" in dependencies array
+4. Include Spinner component as separate file when needed for loading states
+5. Use data attributes for styling variants (data-size, data-hierarchy, etc.)
+6. Include forwardRef and displayName
 
-Generate a complete ShadCN registry item with:
-1. All files needed for the component (TSX, CSS, helper components)
-2. Proper dependencies array including "react" and "clsx"
-3. Production-ready code that compiles without errors
-4. Full implementation of all props from the component specification
-
-The design specifications above contain all the implementation details you need.`,
+RETURN THIS EXACT JSON STRUCTURE:
+{
+  "name": "button",
+  "type": "component",
+  "title": "Button", 
+  "description": "Base button component with multiple hierarchies and sizes",
+  "dependencies": ["react", "clsx"],
+  "registryDependencies": [],
+  "files": [
+    {
+      "name": "Button.tsx",
+      "content": "// Complete React component code here"
+    },
+    {
+      "name": "Button.module.css", 
+      "content": "// Complete CSS module code here"
+    },
+    {
+      "name": "Spinner.tsx",
+      "content": "// Spinner component code if needed"
+    }
+  ],
+  "category": "UI Components"
+}`,
   });
 
   return object;
