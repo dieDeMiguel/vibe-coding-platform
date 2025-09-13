@@ -1,23 +1,28 @@
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { experimental_createMCPClient } from "ai";
 
-// MCP Client configuration
-const MCP_BASE_URL = process.env.MCP_BASE_URL || "https://meli-xmcp-poc.vercel.app";
+// MCP Client configuration - Usando servidor local para pruebas
+const MCP_BASE_URL = process.env.MCP_BASE_URL || "http://localhost:3001";
 const MCP_ENDPOINT = process.env.MCP_ENDPOINT || `${MCP_BASE_URL}/mcp`;
-const MCP_AUTH_TOKEN = process.env.MCP_AUTH_TOKEN || process.env.MCP_PRODUCTION_TOKEN;
+const MCP_AUTH_TOKEN = process.env.MCP_AUTH_TOKEN || process.env.MCP_PRODUCTION_TOKEN || "36cefd998bf9d7fa9c193f6b98df01754ec1247fe1f8c9127d858fe7d448d2bd";
 
 // Create MCP client instance
 let mcpClient: Awaited<ReturnType<typeof experimental_createMCPClient>> | null = null;
 
 async function getMCPClient() {
   if (!mcpClient) {
+    console.log('🔄 Conectando a MCP:', MCP_ENDPOINT);
+    console.log('🔑 Token configurado:', MCP_AUTH_TOKEN ? 'SÍ' : 'NO');
+    
     // Prepare headers with authentication if token is available
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
     };
     
     if (MCP_AUTH_TOKEN) {
       headers.Authorization = `Bearer ${MCP_AUTH_TOKEN}`;
+      console.log('🔐 Agregando token de autenticación');
     }
 
     mcpClient = await experimental_createMCPClient({
@@ -26,6 +31,8 @@ async function getMCPClient() {
         headers,
       ),
     });
+    
+    console.log('✅ Cliente MCP creado exitosamente');
   }
   return mcpClient;
 }
