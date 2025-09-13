@@ -23,5 +23,5 @@ export const SUPPORTED_MODELS: GatewayModelId[] = [
 export const TEST_PROMPTS = [
   'Generate a Next.js app that allows to list and search Pokemons',
   'Create a `golang` server that responds with "Hello World" to any request',
-  'Create a Button component from MCP'
+  'Fetch all Button components from MCP, display all of them in a 2 dimensional grid, like a catalog. On the root folder, create a page.tsx file that displays the catalog.'
 ]
