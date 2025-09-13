@@ -231,11 +231,15 @@ async function handleFetchComponent({
   // Get component from internal registry endpoint
   const baseUrl = process.env.NODE_ENV === 'development' 
     ? 'http://localhost:3000' 
-    : process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : 'http://localhost:3000';
+    : 'https://meli-vibe-coding-platform.vercel.app'; // Force main URL instead of deployment-specific URL
       
   const registryUrl = `${baseUrl}/r/${componentName}${variant ? `?variant=${variant}` : ''}`;
+  
+  console.log('🔧 Component fetch debug:');
+  console.log('  NODE_ENV:', process.env.NODE_ENV);
+  console.log('  VERCEL_URL:', process.env.VERCEL_URL);
+  console.log('  baseUrl:', baseUrl);
+  console.log('  registryUrl:', registryUrl);
   
   const response = await fetch(registryUrl, {
     headers: {
