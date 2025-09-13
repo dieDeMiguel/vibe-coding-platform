@@ -137,7 +137,13 @@ export async function getComponent(name: string, variant?: string): Promise<{
   
   if (MCP_AUTH_TOKEN) {
     headers.Authorization = `Bearer ${MCP_AUTH_TOKEN}`;
+    console.log('🔐 getComponent: Adding Authorization header');
+  } else {
+    console.log('⚠️ getComponent: No MCP_AUTH_TOKEN found');
   }
+  
+  console.log('📡 getComponent: Headers:', JSON.stringify(headers, null, 2));
+  console.log('🎯 getComponent: Calling:', MCP_ENDPOINT);
   
   const response = await fetch(MCP_ENDPOINT, {
     method: 'POST',
