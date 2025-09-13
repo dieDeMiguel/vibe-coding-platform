@@ -1,11 +1,12 @@
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { experimental_createMCPClient } from "ai";
-import { normalizeComponentToRegistryItem, normalizeListToRegistryIndex } from "./normalizer";
 
 // MCP Client configuration
 const MCP_BASE_URL = process.env.MCP_BASE_URL || "http://localhost:3001";
 const MCP_ENDPOINT = `${MCP_BASE_URL}/mcp`;
 const MCP_AUTH_TOKEN = process.env.MCP_AUTH_TOKEN;
+
+console.log('MCP_BASE_URL', MCP_BASE_URL);
 
 // Legacy MCP client instance for backward compatibility
 let mcpClient: Awaited<ReturnType<typeof experimental_createMCPClient>> | null = null;
@@ -32,49 +33,7 @@ async function getMCPClient() {
   return mcpClient;
 }
 
-/**
- * Get normalized tools for use in streamText (uses existing functions)
- */
-export function getNormalizedTools() {
-  return {
-    get_component_normalized: {
-      description: "Get a normalized ShadCN-compatible component with complete TypeScript code and CSS",
-      parameters: {
-        type: "object" as const,
-        properties: {
-          name: { type: "string", description: "Component name" },
-          variant: { type: "string", description: "Component variant (optional)" }
-        },
-        required: ["name"]
-      },
-      execute: async (args: { name: string; variant?: string }) => {
-        // Use existing getComponent function and normalize
-        const result = await getComponent(args.name, args.variant);
-        const normalized = await normalizeComponentToRegistryItem(result);
-        return normalized;
-      }
-    },
-    
-    list_components_normalized: {
-      description: "List available components in normalized ShadCN registry format",
-      parameters: {
-        type: "object" as const,
-        properties: {
-          query: { type: "string", description: "Search query (optional)" },
-          tags: { type: "array", items: { type: "string" }, description: "Filter by tags (optional)" },
-          package: { type: "string", description: "Filter by package (optional)" }
-        },
-        required: []
-      },
-      execute: async (args: { query?: string; tags?: string[]; package?: string }) => {
-        // Use existing listComponents function and normalize
-        const result = await listComponents(args);
-        const normalized = await normalizeListToRegistryIndex(result);
-        return normalized;
-      }
-    }
-  };
-}
+// Normalized tools are now defined directly in the chat endpoint
 
 /**
  * List available components from MCP server
