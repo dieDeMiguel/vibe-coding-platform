@@ -51,15 +51,23 @@ export async function listComponents(options?: {
   }>;
   total: number;
 }> {
-  await getMCPClient();
+  // Skip getMCPClient() as it causes issues in Vercel sandbox
+  // await getMCPClient();
+  
+  // Prepare headers with authentication
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+  
+  if (MCP_AUTH_TOKEN) {
+    headers.Authorization = `Bearer ${MCP_AUTH_TOKEN}`;
+  }
   
   // Call MCP server directly using JSON-RPC
   const response = await fetch(MCP_ENDPOINT, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    },
+    headers,
     body: JSON.stringify({
       jsonrpc: '2.0',
       id: 1,
@@ -123,9 +131,10 @@ export async function getComponent(name: string, variant?: string): Promise<{
     tags?: string[];
   };
 }> {
-  await getMCPClient();
+  // Skip getMCPClient() as it causes issues in Vercel sandbox
+  // await getMCPClient();
   
-  // Call MCP server directly using JSON-RPC
+  // Prepare headers with authentication
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
