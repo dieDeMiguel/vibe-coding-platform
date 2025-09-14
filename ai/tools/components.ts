@@ -83,31 +83,17 @@ async function handleListComponents({
     data: { action: 'list', query, status: 'listing' },
   })
 
-  // Get components list from internal registry endpoint
-  const baseUrl = process.env.NODE_ENV === 'development' 
-    ? 'http://localhost:3000' 
-    : process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : 'http://localhost:3000';
-      
-  const queryParams = new URLSearchParams();
-  if (query) queryParams.set('query', query);
-  if (tags?.length) queryParams.set('tags', tags.join(','));
-  if (packageFilter) queryParams.set('package', packageFilter);
+  // Get components list directly from MCP client (avoid external HTTP call in production)
+  const { listComponents } = await import('@/lib/mcp/client');
+  const { normalizeListToRegistryIndex } = await import('@/lib/mcp/normalizer');
   
-  const indexUrl = `${baseUrl}/r/index${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-  
-  const response = await fetch(indexUrl, {
-    headers: {
-      'Accept': 'application/json',
-    },
+  const mcpResponse = await listComponents({
+    query,
+    tags,
+    package: packageFilter,
   });
-
-  if (!response.ok) {
-    throw new Error(`Failed to list components: ${response.statusText}`)
-  }
-
-  const items = await response.json()
+  
+  const items = await normalizeListToRegistryIndex(mcpResponse);
   const total = items.length
   const componentNames = items.map((item: { name: string }) => item.name)
 
