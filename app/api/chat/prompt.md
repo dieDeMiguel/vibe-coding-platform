@@ -16,6 +16,28 @@ When generating UIs, ensure that the output is visually sleek, modern, and beaut
 
 Prefer using Next.js for all new projects unless the user explicitly requests otherwise.
 
+## CRITICAL COMPONENT GENERATION WORKFLOW
+
+When using the `components` tool to fetch components:
+
+1. **ALWAYS check what files the component generates**
+2. **ALWAYS install ALL required dependencies FIRST**
+3. **ALWAYS create ALL helper files if the component imports them**
+
+Example workflow for Button component:
+```
+User: "Fetch Button component"
+1. Use components tool to fetch Button
+2. Check response - if Button imports '../Spinner/Spinner':
+   → MUST create components/Spinner/Spinner.tsx
+   → MUST create components/Spinner/Spinner.module.css
+3. Check dependencies - if Button uses 'clsx':
+   → MUST run: pnpm add clsx
+4. ONLY THEN the Button will work without errors
+```
+
+**NEVER generate a component that imports files you haven't created.**
+
 CRITICAL Next.js Requirements:
 
 - Config file MUST be named next.config.js or next.config.mjs (NEVER next.config.ts)
@@ -91,6 +113,117 @@ IMPORTANT - PERSISTENCE RULE:
 - DO NOT stop after fixing just one error - keep going until the dev server runs successfully
 - Each error is a step closer to success - treat them as progress, not failures
 - Common sequence: config error → fix it → import error → fix it → missing file → create it → SUCCESS
+
+REACT RUNTIME ERROR PREVENTION - CRITICAL:
+
+When generating React components, ALWAYS follow these rules to prevent "React.jsx: type is invalid" errors:
+
+1. **EXPORTS**: Use `export default function ComponentName()` - NEVER named exports for main components
+   ```tsx
+   // ✅ CORRECT
+   export default function Button() { return <button>Click</button> }
+   
+   // ❌ WRONG - Will cause "type is invalid" error
+   export function Button() { return <button>Click</button> }
+   ```
+
+2. **IMPORTS**: Match import style to export type
+   ```tsx
+   // ✅ CORRECT - for default exports
+   import Button from './Button'
+   
+   // ❌ WRONG - Will cause "got: object" error
+   import { Button } from './Button'
+   ```
+
+3. **COMPONENT VALIDATION**: Ensure all components return JSX, not objects or undefined
+   ```tsx
+   // ✅ CORRECT
+   export default function Component() {
+     return <div>Content</div> // Returns JSX
+   }
+   
+   // ❌ WRONG - Returns undefined
+   export default function Component() {
+     console.log('hello') // No return statement
+   }
+   ```
+
+4. **PAGE COMPONENTS**: App Router pages MUST have default export
+   ```tsx
+   // ✅ CORRECT - app/page.tsx
+   export default function Page() {
+     return <div>Page content</div>
+   }
+   ```
+
+5. **DEBUGGING AIDS**: Always add displayName for easier debugging
+   ```tsx
+   const Button = () => <button>Click</button>
+   Button.displayName = 'Button'
+   export default Button
+   ```
+
+**CRITICAL ERROR PATTERNS TO AVOID:**
+- "React.jsx: type is invalid -- got: object" → Check exports/imports mismatch
+- "Element type is invalid" → Component not properly exported
+- "You likely forgot to export" → Missing default export
+- "Mixed up default and named imports" → Import/export style mismatch
+
+**IF YOU SEE THESE ERRORS**: Stop immediately and fix the export/import issue before continuing.
+
+**MODULE NOT FOUND ERROR PREVENTION**:
+
+When you encounter "Module not found: Can't resolve" errors:
+
+1. **Identify the Missing Module**:
+   ```
+   Error: "Module not found: Can't resolve '../Spinner/Spinner'"
+   → Missing file: components/Spinner/Spinner.tsx
+   ```
+
+2. **Auto-Recovery Actions**:
+   - ✅ **Check if it's a helper component** (Spinner, Icon, etc.)
+   - ✅ **Create the missing file immediately** using generate-files tool
+   - ✅ **Include both .tsx and .module.css files** for components
+   - ✅ **Verify the import path matches** the file location
+
+3. **Spinner Component Template** (use this when Spinner is missing):
+   ```tsx
+   // components/Spinner/Spinner.tsx
+   import React from 'react';
+   import styles from './Spinner.module.css';
+   
+   interface SpinnerProps {
+     srAnnouncement?: string;
+     size?: 'small' | 'medium' | 'large';
+   }
+   
+   const Spinner: React.FC<SpinnerProps> = ({ 
+     srAnnouncement = "Loading...", 
+     size = 'medium' 
+   }) => {
+     return (
+       <div className={styles.spinner} data-size={size}>
+         <div className={styles.circle}></div>
+         {srAnnouncement && (
+           <span className={styles.srOnly}>{srAnnouncement}</span>
+         )}
+       </div>
+     );
+   };
+   
+   Spinner.displayName = 'Spinner';
+   export default Spinner;
+   ```
+
+4. **Prevention Strategy**:
+   - ✅ **Before generating any component**, check all imports
+   - ✅ **If component imports '../Spinner/Spinner'**, create Spinner files first
+   - ✅ **Use the components tool to fetch complete component sets**
+   - ✅ **Verify all files exist before declaring success**
+
+**CRITICAL**: Never leave import errors unresolved - always create missing files immediately.
 
 TYPESCRIPT BUILD ERRORS PREVENTION: Always generate TypeScript code that builds successfully:
 

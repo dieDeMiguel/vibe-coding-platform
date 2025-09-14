@@ -145,6 +145,308 @@ function convertRegistryToNormalizedSpec(registryItem: RegistryItem, originalCom
 }
 
 /**
+ * Validates that all relative imports in a component have corresponding files
+ */
+function validateImports(componentContent: string, availableFiles: Array<{path: string, content: string}>): string[] {
+  const missingImports: string[] = []
+  
+  // Extract import statements with relative paths
+  const importRegex = /import.*from\s+['"](\.\.\?\/[^'"]+)['"]/g
+  const imports = [...componentContent.matchAll(importRegex)]
+  
+  for (const [, importPath] of imports) {
+    // Convert import path to expected file path
+    // '../Spinner/Spinner' -> 'Spinner.tsx'
+    const fileName = importPath.split('/').pop() + '.tsx'
+    
+    // Check if file exists in available files
+    const fileExists = availableFiles.some(file => file.path.endsWith(fileName))
+    
+    if (!fileExists) {
+      missingImports.push(importPath)
+    }
+  }
+  
+  return missingImports
+}
+
+/**
+ * Validates that all npm package imports are listed in dependencies
+ */
+function validateNpmDependencies(componentContent: string, declaredDependencies: string[]): string[] {
+  const missingDependencies: string[] = []
+  
+  // Extract import statements for npm packages (not relative paths)
+  const importRegex = /import.*from\s+['"]([^.][^'"]+)['"]/g
+  const imports = [...componentContent.matchAll(importRegex)]
+  
+  for (const [, importPath] of imports) {
+    // Skip built-in modules and scoped packages for now
+    if (importPath.startsWith('@') || ['react', 'react-dom'].includes(importPath)) {
+      continue
+    }
+    
+    // Check if dependency is declared
+    if (!declaredDependencies.includes(importPath)) {
+      missingDependencies.push(importPath)
+    }
+  }
+  
+  return missingDependencies
+}
+
+/**
+ * Attempts to auto-recover missing helper component files
+ */
+async function attemptAutoRecovery(missingImports: string[], _componentTitle: string): Promise<Array<{path: string, content: string, type: 'tsx' | 'css' | 'scss'}>> {
+  const recoveredFiles: Array<{path: string, content: string, type: 'tsx' | 'css' | 'scss'}> = []
+  
+  for (const importPath of missingImports) {
+    const { name: componentName, type: componentType } = parseImportPath(importPath)
+    
+    // Try to auto-recover based on component type and name
+    const template = getComponentTemplate(componentName, componentType)
+    
+    if (template) {
+      // Add main component file
+      recoveredFiles.push({
+        path: `components/${componentName}/${componentName}.tsx`,
+        content: template.component,
+        type: 'tsx'
+      })
+      
+      // Add CSS module if template provides one
+      if (template.styles) {
+        recoveredFiles.push({
+          path: `components/${componentName}/${componentName}.module.css`,
+          content: template.styles,
+          type: 'css'
+        })
+      }
+      
+      console.log(`🔄 Auto-recovered ${componentName} (${componentType}) component`)
+    } else {
+      console.warn(`⚠️ No template available for ${componentName} (${componentType})`)
+    }
+  }
+  
+  return recoveredFiles
+}
+
+/**
+ * Extracts component name and type from import path
+ */
+function parseImportPath(importPath: string): { name: string; type: 'component' | 'icon' | 'util' | 'unknown' } {
+  const parts = importPath.split('/')
+  const fileName = parts[parts.length - 1]
+  const directory = parts[parts.length - 2]
+  
+  // Determine type based on directory or naming patterns
+  let type: 'component' | 'icon' | 'util' | 'unknown' = 'unknown'
+  
+  if (directory === 'icons' || fileName.startsWith('Icon') || fileName.includes('Icon')) {
+    type = 'icon'
+  } else if (directory === 'utils' || fileName.includes('util') || fileName.includes('helper')) {
+    type = 'util'
+  } else if (fileName[0] === fileName[0].toUpperCase()) {
+    // Capitalized = likely a component
+    type = 'component'
+  }
+  
+  return { name: fileName, type }
+}
+
+/**
+ * Gets component template based on name and type
+ */
+function getComponentTemplate(name: string, type: 'component' | 'icon' | 'util' | 'unknown'): { component: string; styles?: string } | null {
+  // Spinner component
+  if (name === 'Spinner') {
+    return {
+      component: generateSpinnerComponent(),
+      styles: generateSpinnerStyles()
+    }
+  }
+  
+  // Generic icon component
+  if (type === 'icon' || name.includes('Icon')) {
+    return {
+      component: generateIconComponent(name)
+    }
+  }
+  
+  // Generic component
+  if (type === 'component') {
+    return {
+      component: generateGenericComponent(name),
+      styles: generateGenericStyles(name)
+    }
+  }
+  
+  return null
+}
+
+/**
+ * Generates default Spinner component content
+ */
+function generateSpinnerComponent(): string {
+  return `import React from 'react';
+import styles from './Spinner.module.css';
+
+interface SpinnerProps {
+  srAnnouncement?: string;
+  size?: 'small' | 'medium' | 'large';
+}
+
+const Spinner: React.FC<SpinnerProps> = ({ 
+  srAnnouncement = "Loading...", 
+  size = 'medium' 
+}) => {
+  return (
+    <div className={styles.spinner} data-size={size}>
+      <div className={styles.circle}></div>
+      {srAnnouncement && (
+        <span className={styles.srOnly}>{srAnnouncement}</span>
+      )}
+    </div>
+  );
+};
+
+Spinner.displayName = 'Spinner';
+
+export default Spinner;`
+}
+
+/**
+ * Generates default Spinner styles
+ */
+function generateSpinnerStyles(): string {
+  return `.spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.circle {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.spinner[data-size="small"] .circle {
+  width: 12px;
+  height: 12px;
+  border-width: 1.5px;
+}
+
+.spinner[data-size="large"] .circle {
+  width: 20px;
+  height: 20px;
+  border-width: 2.5px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}`
+}
+
+/**
+ * Generates generic icon component template
+ */
+function generateIconComponent(name: string): string {
+  return `import React from 'react';
+
+interface ${name}Props {
+  size?: number;
+  className?: string;
+  color?: string;
+}
+
+const ${name}: React.FC<${name}Props> = ({ 
+  size = 24, 
+  className = '', 
+  color = 'currentColor' 
+}) => {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      {/* TODO: Add actual icon path */}
+      <circle cx="12" cy="12" r="10"/>
+      <path d="m9 12 2 2 4-4"/>
+    </svg>
+  );
+};
+
+${name}.displayName = '${name}';
+export default ${name};`
+}
+
+/**
+ * Generates generic component template
+ */
+function generateGenericComponent(name: string): string {
+  return `import React from 'react';
+import styles from './${name}.module.css';
+
+interface ${name}Props {
+  children?: React.ReactNode;
+  className?: string;
+}
+
+const ${name}: React.FC<${name}Props> = ({ 
+  children, 
+  className = '' 
+}) => {
+  return (
+    <div className={\`\${styles.${name.toLowerCase()}} \${className}\`}>
+      {children || '${name} Component'}
+    </div>
+  );
+};
+
+${name}.displayName = '${name}';
+export default ${name};`
+}
+
+/**
+ * Generates generic component styles
+ */
+function generateGenericStyles(name: string): string {
+  return `.${name.toLowerCase()} {
+  /* Add your styles here */
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  background-color: #ffffff;
+}`
+}
+
+/**
  * Generates component files from registry item
  */
 async function generateComponentFilesFromRegistry({
@@ -168,6 +470,28 @@ async function generateComponentFilesFromRegistry({
           file.name.endsWith('.scss') ? 'scss' as const :
           file.name.endsWith('.css') ? 'css' as const : 'tsx' as const,
   }))
+
+  // VALIDATION: Check for missing imports in main component
+  const mainComponentFile = files.find(f => f.path.endsWith(`${registryItem.title}.tsx`))
+  if (mainComponentFile) {
+    const missingImports = validateImports(mainComponentFile.content, files)
+    if (missingImports.length > 0) {
+      console.warn(`⚠️ Missing imports detected in ${registryItem.title}:`, missingImports)
+      
+      // AUTO-RECOVERY: Try to add missing helper files
+      const recoveredFiles = await attemptAutoRecovery(missingImports, registryItem.title)
+      if (recoveredFiles.length > 0) {
+        files.push(...recoveredFiles)
+        console.log(`✅ Auto-recovered ${recoveredFiles.length} missing files:`, recoveredFiles.map(f => f.path))
+      }
+    }
+    
+    // VALIDATION: Check for missing npm dependencies
+    const missingDependencies = validateNpmDependencies(mainComponentFile.content, registryItem.dependencies)
+    if (missingDependencies.length > 0) {
+      console.warn(`⚠️ Missing npm dependencies in ${registryItem.title}:`, missingDependencies)
+    }
+  }
 
   // Add demo files if requested
   if (generateDemo) {
@@ -286,8 +610,27 @@ async function handleFetchComponent({
 
   const filesList = result.files.map(f => `- ${f.path}`).join('\n')
   
+  // Check if component needs additional setup
+  const needsClsx = result.files.some(f => f.content?.includes('clsx'))
+  const hasSpinner = result.files.some(f => f.path.includes('Spinner'))
+  const mainComponent = result.files.find(f => f.path.includes(`${componentName}.tsx`))
+  const hasSpinnerImport = mainComponent?.content?.includes('../Spinner/Spinner') || mainComponent?.content?.includes('./Spinner')
+  
+  let setupInstructions = ''
+  if (needsClsx) {
+    setupInstructions += `\n⚠️  REQUIRED: Install clsx dependency first:\n   pnpm add clsx\n`
+  }
+  
+  if (hasSpinnerImport && !hasSpinner) {
+    setupInstructions += `\n⚠️  MISSING: Component imports Spinner but Spinner files not found!\n` +
+      `   You MUST create these files:\n` +
+      `   - components/Spinner/Spinner.tsx\n` +
+      `   - components/Spinner/Spinner.module.css\n`
+  }
+  
   return `Successfully generated ${componentName}${variant ? ` (${variant} variant)` : ''}!\n\n` +
-    `Files created:\n${filesList}${result.demoPath ? `\n\nDemo: ${result.demoPath}` : ''}`
+    `Files created:\n${filesList}${setupInstructions}${result.demoPath ? `\n\nDemo: ${result.demoPath}` : ''}\n\n` +
+    `${setupInstructions ? '🚨 IMPORTANT: Complete the setup instructions above before using the component.' : '✅ Component is ready to use!'}`
 }
 
 /**

@@ -2,9 +2,9 @@ import { registryItemSchema, type RegistryItem, type RegistryIndex } from '@/lib
 import { generateObject } from 'ai';
 import { z } from 'zod';
 
-// MCP Component Response structure (based on actual MCP server response)
+// MCP Component Response structure (updated for new format)
 interface MCPComponentResponse {
-  component: {
+  components?: Array<{
     name: string;
     package: string;
     version: string;
@@ -26,6 +26,28 @@ interface MCPComponentResponse {
       description?: string;
       props: Record<string, unknown>;
     }>;
+    code?: string;
+    tags?: string[];
+  }>;
+  required_dependencies?: Record<string, string>;
+  package_json_dependencies?: Record<string, string>;
+  helper_components?: Array<{
+    name: string;
+    description?: string;
+    files: Array<{
+      path: string;
+      content: string;
+    }>;
+  }>;
+  // Backward compatibility - old format was just the component
+  component?: {
+    name: string;
+    package: string;
+    version: string;
+    description: string;
+    language: string;
+    props: Array<unknown>;
+    variants: Array<unknown>;
     code?: string;
     tags?: string[];
   };
@@ -108,6 +130,32 @@ async function getDesignSpecifications(): Promise<string> {
  */
 export async function normalizeComponentToRegistryItem(mcpResponse: MCPComponentResponse | unknown): Promise<RegistryItem> {
   
+  // Handle both new and old MCP response formats
+  let components: unknown[];
+  let dependencies: Record<string, string> = {};
+  let helperComponents: unknown[] = [];
+  
+  if (Array.isArray(mcpResponse)) {
+    // Old format: array of components
+    components = mcpResponse;
+  } else if (mcpResponse && typeof mcpResponse === 'object') {
+    const response = mcpResponse as MCPComponentResponse;
+    
+    // New format: structured response
+    components = response.components || (response.component ? [response.component] : []);
+    
+    // Extract dependencies
+    dependencies = {
+      ...response.required_dependencies,
+      ...response.package_json_dependencies,
+    };
+    
+    // Extract helper components
+    helperComponents = response.helper_components || [];
+  } else {
+    components = [];
+  }
+  
   // First, get the design specifications from MCP
   const designSpecs = await getDesignSpecifications();
   
@@ -117,7 +165,13 @@ export async function normalizeComponentToRegistryItem(mcpResponse: MCPComponent
     prompt: `You are generating a ShadCN registry item. Return ONLY a valid JSON object with the exact structure shown below.
 
 COMPONENT DATA:
-${JSON.stringify(mcpResponse, null, 2)}
+${JSON.stringify(components, null, 2)}
+
+ADDITIONAL DEPENDENCIES:
+${JSON.stringify(dependencies, null, 2)}
+
+HELPER COMPONENTS:
+${JSON.stringify(helperComponents, null, 2)}
 
 DESIGN SPECIFICATIONS:
 ${designSpecs}
@@ -126,9 +180,13 @@ INSTRUCTIONS:
 1. Follow the design specifications exactly - they contain all implementation details
 2. Generate complete, working React components with TypeScript
 3. Always include "react" and "clsx" in dependencies array
-4. Include Spinner component as separate file when needed for loading states
-5. Use data attributes for styling variants (data-size, data-hierarchy, etc.)
-6. Include forwardRef and displayName
+4. Include ALL additional dependencies from ADDITIONAL DEPENDENCIES section
+5. **CRITICAL**: Create ALL helper components from HELPER COMPONENTS section as separate files in the files array
+6. **CRITICAL**: If component imports '../Spinner/Spinner', MUST include Spinner.tsx and Spinner.module.css in files array
+7. **CRITICAL**: Validate that every import statement has a corresponding file in the files array
+8. Use data attributes for styling variants (data-size, data-hierarchy, etc.)
+9. Include forwardRef and displayName
+10. **VALIDATION**: Before returning, check that all relative imports (starting with './' or '../') have matching files
 
 RETURN THIS EXACT JSON STRUCTURE:
 {
@@ -146,17 +204,82 @@ RETURN THIS EXACT JSON STRUCTURE:
     {
       "name": "Button.module.css", 
       "content": "// Complete CSS module code here"
-    },
-    {
-      "name": "Spinner.tsx",
-      "content": "// Spinner component code if needed"
     }
   ],
   "category": "UI Components"
-}`,
+}
+
+**CRITICAL FOR HELPER COMPONENTS**: If HELPER COMPONENTS section contains files, add them to files array:
+- If helper_components contains Spinner with files: [{path: "components/Spinner/Spinner.tsx", content: "..."}, {path: "components/Spinner/Spinner.module.css", content: "..."}]
+- Add to files array: {"name": "Spinner.tsx", "content": "..."}, {"name": "Spinner.module.css", "content": "..."}
+- Ensure component imports match: import Spinner from '../Spinner/Spinner'
+
+**VALIDATION CHECKLIST**:
+✓ Every import '../Something/Something' has corresponding Something.tsx in files array
+✓ Every helper component from HELPER COMPONENTS section is included in files array
+✓ All dependencies from ADDITIONAL DEPENDENCIES are in dependencies array
+✓ Component uses default export and has displayName`,
   });
 
+  // POST-GENERATION VALIDATION: Ensure helper components were included
+  const validationResult = validateGeneratedRegistry(object, helperComponents as any[]);
+  if (!validationResult.isValid) {
+    console.warn('⚠️ Registry validation failed:', validationResult.issues);
+    // Log issues but don't fail - let the system handle it gracefully
+  }
+
   return object;
+}
+
+/**
+ * Validates that the generated registry item includes all necessary helper components
+ */
+function validateGeneratedRegistry(registryItem: any, helperComponents: any[]): { isValid: boolean, issues: string[] } {
+  const issues: string[] = [];
+  
+  if (!registryItem.files || !Array.isArray(registryItem.files)) {
+    issues.push('Registry item missing files array');
+    return { isValid: false, issues };
+  }
+  
+  // Check if main component imports helper components
+  const mainComponentFile = registryItem.files.find((f: any) => f.name?.endsWith('.tsx') && f.name.includes(registryItem.title));
+  
+  if (mainComponentFile && helperComponents.length > 0) {
+    const componentContent = mainComponentFile.content || '';
+    
+    // Check for Spinner imports
+    if (componentContent.includes('../Spinner/Spinner') || componentContent.includes('./Spinner')) {
+      const hasSpinnerTsx = registryItem.files.some((f: any) => f.name === 'Spinner.tsx');
+      const hasSpinnerCss = registryItem.files.some((f: any) => f.name === 'Spinner.module.css');
+      
+      if (!hasSpinnerTsx) {
+        issues.push('Component imports Spinner but Spinner.tsx not found in files');
+      }
+      if (!hasSpinnerCss) {
+        issues.push('Component imports Spinner but Spinner.module.css not found in files');
+      }
+    }
+    
+    // Validate other helper components
+    helperComponents.forEach((helper: any) => {
+      if (helper.files) {
+        helper.files.forEach((helperFile: any) => {
+          const fileName = helperFile.path.split('/').pop();
+          const fileExists = registryItem.files.some((f: any) => f.name === fileName);
+          
+          if (!fileExists) {
+            issues.push(`Helper component file '${fileName}' missing from registry files`);
+          }
+        });
+      }
+    });
+  }
+  
+  return {
+    isValid: issues.length === 0,
+    issues
+  };
 }
 
 /**
