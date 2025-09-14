@@ -222,7 +222,7 @@ RETURN THIS EXACT JSON STRUCTURE:
   });
 
   // POST-GENERATION VALIDATION: Ensure helper components were included
-  const validationResult = validateGeneratedRegistry(object, helperComponents as any[]);
+  const validationResult = validateGeneratedRegistry(object, helperComponents as HelperComponent[]);
   if (!validationResult.isValid) {
     console.warn('⚠️ Registry validation failed:', validationResult.issues);
     // Log issues but don't fail - let the system handle it gracefully
@@ -231,10 +231,25 @@ RETURN THIS EXACT JSON STRUCTURE:
   return object;
 }
 
+interface HelperComponent {
+  name?: string;
+  files?: Array<{ path: string; content: string }>;
+}
+
+interface RegistryFile {
+  name?: string;
+  content?: string;
+}
+
+interface ValidationRegistryItem {
+  title?: string;
+  files?: RegistryFile[];
+}
+
 /**
  * Validates that the generated registry item includes all necessary helper components
  */
-function validateGeneratedRegistry(registryItem: any, helperComponents: any[]): { isValid: boolean, issues: string[] } {
+function validateGeneratedRegistry(registryItem: ValidationRegistryItem, helperComponents: HelperComponent[]): { isValid: boolean, issues: string[] } {
   const issues: string[] = [];
   
   if (!registryItem.files || !Array.isArray(registryItem.files)) {
@@ -243,15 +258,15 @@ function validateGeneratedRegistry(registryItem: any, helperComponents: any[]): 
   }
   
   // Check if main component imports helper components
-  const mainComponentFile = registryItem.files.find((f: any) => f.name?.endsWith('.tsx') && f.name.includes(registryItem.title));
+  const mainComponentFile = registryItem.files.find(f => f.name?.endsWith('.tsx') && f.name.includes(registryItem.title || ''));
   
   if (mainComponentFile && helperComponents.length > 0) {
     const componentContent = mainComponentFile.content || '';
     
     // Check for Spinner imports
     if (componentContent.includes('../Spinner/Spinner') || componentContent.includes('./Spinner')) {
-      const hasSpinnerTsx = registryItem.files.some((f: any) => f.name === 'Spinner.tsx');
-      const hasSpinnerCss = registryItem.files.some((f: any) => f.name === 'Spinner.module.css');
+      const hasSpinnerTsx = registryItem.files.some(f => f.name === 'Spinner.tsx');
+      const hasSpinnerCss = registryItem.files.some(f => f.name === 'Spinner.module.css');
       
       if (!hasSpinnerTsx) {
         issues.push('Component imports Spinner but Spinner.tsx not found in files');
@@ -262,11 +277,11 @@ function validateGeneratedRegistry(registryItem: any, helperComponents: any[]): 
     }
     
     // Validate other helper components
-    helperComponents.forEach((helper: any) => {
+    helperComponents.forEach(helper => {
       if (helper.files) {
-        helper.files.forEach((helperFile: any) => {
+        helper.files.forEach(helperFile => {
           const fileName = helperFile.path.split('/').pop();
-          const fileExists = registryItem.files.some((f: any) => f.name === fileName);
+          const fileExists = registryItem.files?.some(f => f.name === fileName);
           
           if (!fileExists) {
             issues.push(`Helper component file '${fileName}' missing from registry files`);

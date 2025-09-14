@@ -155,7 +155,6 @@ export function ErrorMonitor({ children, debounceTimeMs = 10000 }: Props) {
     } else if (status === 'disabled') {
       clearSubmitTimeout()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- This is fine
   }, [clearSubmitTimeout, cursor, errors, status, debounceTimeMs, setCursor, setScheduled, handleErrors])
 
   return <Context.Provider value={{ status }}>{children}</Context.Provider>
